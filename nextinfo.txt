@@ -1,0 +1,2184 @@
+i will give you the requirements for the hackathon and i want you to follow these strictly instructions and give me the series of instructions or prompts that i have to use to build it using google ai studio and also i want first the basic working one and the instructionsare to be followed strictlyy
+
+3. Retail - Sales and Inventory Copilot (TRACK_ID=PS03)
+A store manager's data is rich; their decisions are rushed. What needs attention today is buried across sales
+reports and stock sheets.
+Build a copilot for a store manager running a small retail operation - a few stores, a catalogue of products,
+daily sales and stock data that your system loads and works over. The manager asks questions in plain
+language - what is running out, what is overstocked, how did a product do this month - and the copilot
+answers with the actual numbers behind every answer, never a claim without the figures. It flags what needs
+attention today: likely stock-outs before they happen, stock that is not moving, and sales spikes or drops
+worth a look - and recommends an action for each, showing the data and assumptions behind the
+recommendation. When the data cannot answer a question, it says so rather than guessing.
+
+
+2. Evaluation criteria
+• A working application - python app.py starts and the app comes up on port 8000 within the timeout.
+• Real commit history - Commit history shows real progression across the 24 hours - not one giant dump
+at the end
+• Sound engineering - clean, modular code with a clear separation between LLM reasoning and
+deterministic logic, sensible data handling, and graceful behaviour when a model call or input fails.
+• A working solution to the stated problem - the application runs, does what the problem statement
+asks end to end, and handles the incomplete, ambiguous and edge cases the statement calls out rather
+than only the happy path.
+• A well-grounded GenAI implementation - the AI capability grounds its answers in the system's own
+data and documents, with evidence or citations for what it recommends, structured and usable outputs,
+and the discipline to escalate or refuse rather than invent when the information is not there.
+• Problem understanding and judgement - the solution reflects a real reading of the problem, and the
+design choices - what to automate, what to leave to a human, what to leave out - show considered
+trade-offs.
+3. What you build and submit
+The backend must be Python. Frontend, libraries, frameworks and GenAI tooling are your choice - we
+evaluate what the system does and how it is engineered.
+What you must ship: a working application a judge can run and interact with, in a GitHub repository, with a
+2-3 minute demo video showing the system handling a normal case and a difficult one.
+Submission rules
+One command to run. From the repository root: pip install -r requirements.txt, then python app.py starts your
+entire application - backend and frontend together - serving at http://localhost:8000. If you build a separate
+frontend (React, Vue, etc.), commit the built files and serve them from your Python app; a judge will not run a
+second command. No second terminal, no build step, no manual setup, and nothing that waits for a keypress.
+Gemini is the only external API. Use the Gemini API for both your LLM calls and your embeddings
+(gemini-embedding-001). Read the key from the GEMINI_API_KEY environment variable - we supply our
+own key when we run your app - and never commit a key to the repository. Nothing else goes over the
+network: no other providers, no hosted vector databases, no 3rd party RAG or memory services. Local
+libraries like FAISS, Chroma in local mode, numpy and sqlite are fine, so build your own retrieval pipeline.
+Your repository, in a fixed shape. app.py, requirements.txt and README.md at the root; everything else is
+your choice. The first line of your README is your track, exactly like this: TRACK_ID=PS6 - nothing else
+on that line. Commit your generated data and your built frontend files; leave out virtual environments, model
+weights and keys.
+A README a judge can follow. After the track ID line: what the project does, how to run it, what data and
+documents you generated, and the demo video link.
+Your own data and documents. No datasets or documents are provided. Each problem statement names
+the material your system works over - the rules, policies, records or articles - and you create it yourself. Using
+an LLM to generate it is expected; a small, well-made set is enough, and your AI capability is judged on how
+well it grounds in it.
+It has to run inside our limits. We run Python 3.11 on a clean machine. pip install gets 10 minutes, your app
+gets 90 seconds to start answering on port 8000, and any single request gets 60 seconds. Do your indexing
+or embedding at startup within that window - if it is slow, precompute the index and commit it. Test a fresh
+clone before you submit.
+On Devfolio you submit two things: your GitHub repository link and a 5 minute demo video of the working
+application.
+Projects that do not start this way cannot receive functional credit - so test a fresh clone of your own repository before
+submitting.
+Page 3
+
+Example submission
+A typical repository root:
+your-project/
+app.py <- python app.py starts everything, on port 8000
+requirements.txt <- all Python dependencies
+README.md <- what it does, how to run, env var names, demo video link
+src/ <- your backend modules
+frontend/dist/ <- built frontend files, if you have a separate frontend
+data/ <- the sample data and documents your system works over
+Folder names inside the repo are up to you - what is fixed is app.py and requirements.txt at the root, and the port.
+
+
+
+chatgpt response:
+
+Yes. Given these rules, I would not start by building the “full futuristic retail platform.” We should build the smallest correct end-to-end PS03 first, verify it against every requirement, commit it, and then add capabilities in controlled stages.
+
+One important correction from your specification: the README must begin with TRACK_ID=PS6 exactly, even though the project description says TRACK_ID=PS03. The submission rules explicitly say the first README line must be TRACK_ID=PS6, so I would follow the literal repository requirement.
+
+I also checked Google's current Gemini documentation. The current Python SDK is google-genai, it reads GEMINI_API_KEY, structured JSON output is supported, and gemini-embedding-001 is still available for text embeddings. 
+G
+Google AI for Developers
++2
+
+1. The strategy: build in 8 controlled stages
+
+Do not give Google AI Studio one enormous prompt saying "build everything."
+
+Use this sequence:
+
+PROMPT 1 → Project architecture + constraints
+PROMPT 2 → Basic Python application
+PROMPT 3 → Generate realistic retail data
+PROMPT 4 → Deterministic analytics engine
+PROMPT 5 → Basic Gemini copilot
+PROMPT 6 → Evidence/grounding/refusal
+PROMPT 7 → Attention + recommendations
+PROMPT 8 → UI polish + testing + submission
+
+
+After every major stage, run the application and make a Git commit.
+
+This also directly helps satisfy the real commit history requirement.
+
+2. What our MVP should actually contain
+
+The first working version should have exactly this:
+
+                         RETAIL COPILOT
+                              │
+              ┌───────────────┼────────────────┐
+              │               │                │
+           SALES          INVENTORY        ATTENTION
+              │               │                │
+              ▼               ▼                ▼
+          Revenue          Stock          Stockout risk
+          Units            DOH             Slow movers
+          Growth           Turnover        Sales anomalies
+          Product          Overstock
+          Store
+              │               │                │
+              └───────────────┼────────────────┘
+                              ▼
+                         GEMINI COPILOT
+                              │
+                              ▼
+                    Evidence + Recommendation
+
+
+It must answer:
+
+What is running out?
+What is overstocked?
+What isn't moving?
+How did a product perform this month?
+What sales spikes/drops deserve attention?
+What should I do?
+What numbers support that?
+What assumptions were used?
+What does the data not tell us?
+
+That is enough for a strong first version.
+
+3. Architecture we should force Google AI Studio to build
+
+The most important engineering rule is:
+
+Gemini explains and reasons. Python calculates.
+
+Do not let Gemini calculate your inventory numbers from raw CSVs.
+
+Use:
+
+User
+ ↓
+Gemini / intent interpretation
+ ↓
+Python deterministic tool
+ ↓
+SQLite / Pandas
+ ↓
+Calculated evidence
+ ↓
+Gemini
+ ↓
+Structured response
+ ↓
+UI
+
+
+For example:
+
+User:
+"What products are likely to run out?"
+
+       ↓
+
+Gemini identifies:
+STOCKOUT_RISK
+
+       ↓
+
+Python:
+calculate_stockout_risk()
+
+       ↓
+
+{
+  SKU001:
+    stock: 32
+    daily_demand: 12
+    lead_time: 5
+    risk: 0.91
+}
+
+       ↓
+
+Gemini explains
+
+       ↓
+
+"SKU001 is at high stockout risk..."
+
+
+This separation is exactly what the judges are looking for under sound engineering.
+
+4. Recommended repository
+
+Eventually we want:
+
+retail-copilot/
+│
+├── app.py
+├── requirements.txt
+├── README.md
+│
+├── src/
+│   ├── __init__.py
+│   ├── config.py
+│   ├── database.py
+│   ├── models.py
+│   ├── analytics.py
+│   ├── forecasting.py
+│   ├── anomaly.py
+│   ├── recommendations.py
+│   ├── copilot.py
+│   ├── retrieval.py
+│   └── schemas.py
+│
+├── data/
+│   ├── products.csv
+│   ├── stores.csv
+│   ├── sales.csv
+│   ├── inventory.csv
+│   ├── suppliers.csv
+│   ├── purchase_orders.csv
+│   └── documents/
+│       ├── inventory_policy.md
+│       ├── replenishment_policy.md
+│       └── store_operations.md
+│
+├── static/
+│   ├── index.html
+│   ├── app.js
+│   └── styles.css
+│
+└── tests/
+    ├── test_analytics.py
+    ├── test_stockout.py
+    └── test_copilot.py
+
+
+But don't create all of this immediately.
+
+Let AI Studio build it incrementally.
+
+5. PROMPT 1 — Give this to Google AI Studio first
+
+Open Google AI Studio and start your coding project.
+
+Paste this as the first prompt:
+
+Google AI Studio Prompt 1 — Project Foundation
+
+You are the lead software architect for a hackathon project.
+
+We are building:
+
+TRACK_ID=PS03
+Project: Retail - Sales and Inventory Copilot
+
+You must follow these requirements strictly.
+
+PROJECT REQUIREMENTS:
+
+Backend MUST be Python.
+The application MUST start with exactly:
+python app.py
+It MUST serve the complete application at:
+http://localhost:8000
+There must be no second terminal command.
+There must be no frontend build step required by the judge.
+Python 3.11 must be supported.
+requirements.txt must contain every dependency.
+GEMINI_API_KEY must be read from the environment.
+Never hard-code or commit an API key.
+Gemini is the ONLY external API.
+Use Gemini for LLM functionality.
+Use gemini-embedding-001 for embeddings if embeddings are needed.
+Do NOT use OpenAI, Anthropic, Cohere, Pinecone, hosted Chroma, hosted databases, external RAG services, or any other external API.
+Local SQLite, NumPy, Pandas, scikit-learn, and local vector search are allowed.
+All application data must be local and committed to the repository.
+The application must work on a clean machine after:
+pip install -r requirements.txt
+python app.py
+Startup must be fast enough for the 90-second limit.
+A single request must complete within 60 seconds.
+The application must gracefully handle missing/invalid data and Gemini failures.
+
+CORE PRODUCT:
+
+A store manager operates a small retail business with multiple stores, products, sales, inventory and suppliers.
+
+The copilot must answer natural-language questions such as:
+
+What is running out?
+What is overstocked?
+What products are not moving?
+How did a product perform this month?
+Which stores are performing well?
+What sales spikes or drops deserve attention?
+What should I do today?
+
+The system MUST support:
+
+A. Sales analysis
+B. Inventory analysis
+C. Stockout-risk detection
+D. Slow-moving inventory detection
+E. Overstock detection
+F. Sales spike/drop detection
+G. Action recommendations
+H. Evidence-backed answers
+I. Explicit assumptions
+J. Refusal/uncertainty when the data cannot answer the question
+
+CRITICAL ENGINEERING PRINCIPLE:
+
+Separate deterministic business logic from LLM reasoning.
+
+Python must perform:
+
+arithmetic
+aggregation
+filtering
+KPI calculations
+stockout calculations
+forecasting calculations
+anomaly calculations
+recommendation calculations
+
+Gemini must perform:
+
+natural-language understanding
+intent classification
+selecting the appropriate analytical capability
+explaining computed results
+presenting recommendations
+explaining assumptions
+identifying when evidence is insufficient
+
+Gemini must NEVER invent numerical values.
+
+Every numerical claim in the final answer must originate from a deterministic calculation or directly from the local database.
+
+INITIAL IMPLEMENTATION:
+
+For this first stage, DO NOT implement every feature.
+
+Instead:
+
+Design the architecture.
+Create the repository structure.
+Create app.py.
+Create requirements.txt.
+Create a minimal working FastAPI application.
+Serve a simple frontend from the Python application.
+Add a health endpoint:
+GET /api/health
+Add a simple landing page explaining that this is the Retail Sales and Inventory Copilot.
+Add clear module boundaries for future:
+database
+analytics
+forecasting
+anomaly detection
+recommendations
+Gemini copilot
+retrieval
+Do not add unnecessary frameworks or dependencies.
+
+Use FastAPI with Uvicorn unless there is a strong technical reason not to.
+
+The application must bind to 0.0.0.0 and port 8000.
+
+Do not implement authentication, payments, deployment infrastructure, Docker, Kubernetes, cloud databases, or unrelated functionality.
+
+After implementing this stage:
+
+show me the complete file tree
+explain each file briefly
+show the exact command to install dependencies
+show the exact command to start the app
+do not proceed to advanced features yet
+make sure the code is runnable
+6. After AI Studio finishes Prompt 1
+
+You now test:
+
+pip install -r requirements.txt
+python app.py
+
+
+Then open:
+
+http://localhost:8000
+
+
+Also:
+
+http://localhost:8000/api/health
+
+
+You want:
+
+{
+  "status": "ok"
+}
+
+
+If that works:
+
+git add .
+git commit -m "feat: initialize retail copilot application"
+
+
+Commit 1.
+
+This is important because the judges specifically inspect progression.
+
+7. PROMPT 2 — Generate the retail dataset
+
+Now give AI Studio this.
+
+Google AI Studio Prompt 2 — Generate Retail Data
+
+Continue from the existing project.
+
+Do NOT redesign the existing application architecture.
+
+Now create a realistic synthetic retail dataset for the Retail Sales and Inventory Copilot.
+
+IMPORTANT:
+The challenge provides no dataset. We must generate and commit our own data.
+
+Create local CSV files under:
+
+data/
+
+Required files:
+
+stores.csv
+products.csv
+suppliers.csv
+sales.csv
+inventory.csv
+purchase_orders.csv
+
+Also create:
+
+data/documents/
+
+with:
+
+inventory_policy.md
+replenishment_policy.md
+store_operations.md
+
+DATA SCALE:
+
+Create a small but realistic dataset that is fast to load.
+
+Use approximately:
+
+4 stores
+100-150 products
+10-15 suppliers
+90 days of historical daily sales
+inventory records for every store/product/day where appropriate
+purchase orders
+enough transactions to demonstrate realistic patterns
+
+Use Indian retail context and INR prices, but do not use real customer personally identifiable information.
+
+PRODUCT CATEGORIES should include examples such as:
+
+Beverages
+Snacks
+Grocery
+Personal Care
+Home Care
+Electronics Accessories
+Apparel
+Stationery
+
+Make the data internally consistent.
+
+IMPORTANT DATA SCENARIOS MUST EXIST:
+
+Several fast-moving products approaching stockout.
+Several products with excessive inventory.
+Several slow-moving products.
+At least one product with a clear sales spike.
+At least one product with a clear sales drop.
+At least one store where a product performs significantly better than another store.
+At least one supplier with longer lead time.
+At least one delayed purchase order.
+At least one product with zero sales for an extended period.
+At least one scenario where low sales are caused by low inventory, so the system must avoid incorrectly concluding that demand disappeared.
+
+Create deterministic seed-based generation so the dataset is reproducible.
+
+DATA MODEL:
+
+stores.csv:
+store_id,store_name,city,state,store_type
+
+products.csv:
+product_id,sku,product_name,category,subcategory,brand,supplier_id,cost_price,selling_price,reorder_point,shelf_life_days
+
+suppliers.csv:
+supplier_id,supplier_name,lead_time_days,minimum_order_quantity
+
+sales.csv:
+transaction_id,date,store_id,product_id,quantity,unit_price,discount_amount
+
+inventory.csv:
+date,store_id,product_id,opening_stock,received_quantity,sold_quantity,returned_quantity,damaged_quantity,adjustment_quantity,closing_stock
+
+purchase_orders.csv:
+po_id,order_date,expected_date,received_date,supplier_id,store_id,product_id,ordered_quantity,received_quantity,status,unit_cost
+
+DOCUMENTS:
+
+inventory_policy.md must describe:
+
+how stockout risk is defined
+what counts as slow-moving
+what counts as overstock
+basic inventory management principles
+
+replenishment_policy.md must describe:
+
+reorder point concept
+lead time
+safety stock
+reorder quantity assumptions
+manager approval requirements
+
+store_operations.md must describe:
+
+store operating assumptions
+transfer policy
+damaged inventory
+stock counting
+escalation rules
+
+Do NOT use external datasets or external APIs.
+
+After generation:
+
+Validate referential integrity.
+Validate inventory arithmetic.
+Validate that all product/supplier/store IDs referenced by other files exist.
+Add a validation script or validation function.
+Print a concise data summary when validation runs.
+
+Do not build advanced AI functionality yet.
+
+8. Why we're generating these specific scenarios
+
+This is extremely important for your demo.
+
+You don't want random data.
+
+You want demonstration data designed around the evaluation criteria.
+
+Your dataset should intentionally contain:
+
+Fast product
+    ↓
+High demand
+    ↓
+Low inventory
+    ↓
+Stockout warning
+
+
+And:
+
+Slow product
+    ↓
+Low sales
+    ↓
+High inventory
+    ↓
+Overstock warning
+
+
+And:
+
+Normal sales
+      ↓
+Sudden spike
+      ↓
+Anomaly
+
+
+And:
+
+Inventory = 0
+      ↓
+Sales = 0
+
+
+which tests whether your system understands:
+
+Zero sales doesn't necessarily mean zero demand.
+
+That is a great difficult demo case.
+
+9. Commit 2
+
+After validating:
+
+git add data/ src/
+git commit -m "feat: add realistic retail datasets and business documents"
+
+10. PROMPT 3 — Build the deterministic analytics engine
+
+This is where the real intelligence starts.
+
+Google AI Studio Prompt 3 — Deterministic Retail Analytics
+
+Continue from the existing project.
+
+Do NOT replace the architecture.
+
+Now implement the deterministic retail analytics engine.
+
+CRITICAL RULE:
+
+These calculations MUST NOT be performed by Gemini.
+
+They must be implemented in Python using local data.
+
+Create or extend:
+
+src/analytics.py
+
+and appropriate supporting modules.
+
+Implement these functions.
+
+SALES ANALYTICS
+
+calculate_product_performance(product_id, start_date, end_date, optional store_id)
+
+Return:
+
+units_sold
+revenue
+estimated_cogs
+gross_profit
+gross_margin_percent
+average_daily_units
+average_transaction_value where applicable
+number_of_sales_days
+comparison_with_previous_period
+STORE PERFORMANCE
+
+calculate_store_performance(store_id, start_date, end_date)
+
+Return:
+
+revenue
+units
+gross_profit
+gross_margin
+growth_vs_previous_period
+INVENTORY HEALTH
+
+calculate_inventory_health(store_id, product_id, as_of_date)
+
+Return:
+
+current_stock
+average_daily_sales_7d
+average_daily_sales_30d
+days_of_inventory
+inventory_value_at_cost
+inventory_value_at_retail
+sell_through_rate where meaningful
+INVENTORY TURNOVER
+
+Implement:
+
+inventory_turnover = COGS / average_inventory_cost
+
+Clearly document the calculation period.
+
+SLOW MOVERS
+
+Identify products using deterministic rules.
+
+A product may be considered slow-moving when:
+
+sales are below a configurable threshold
+AND inventory remains above a configurable threshold
+AND the product is not newly launched
+
+Return evidence for every result.
+
+OVERSTOCK
+
+Identify products with days of inventory significantly above a configurable target.
+
+Return:
+
+current stock
+demand velocity
+days of inventory
+target days
+excess units estimate
+excess inventory value
+STOCKOUT RISK
+
+Implement a transparent baseline model.
+
+Use:
+
+lead_time_demand =
+average_daily_demand * supplier_lead_time_days
+
+reorder_requirement =
+lead_time_demand + safety_stock
+
+inventory_position =
+current_stock + incoming_open_purchase_orders - reserved_quantity
+
+risk should consider whether inventory_position is insufficient for expected demand during lead time.
+
+Return:
+
+current_stock
+demand_velocity
+lead_time_days
+lead_time_demand
+safety_stock
+incoming_quantity
+inventory_position
+days_of_inventory
+risk_level
+risk_score
+explanation_factors
+
+Do NOT claim the score is a calibrated probability unless it actually is.
+
+Call it "risk score" if it is a heuristic.
+
+SALES ANOMALIES
+
+Implement deterministic anomaly detection for:
+
+unusual sales spike
+unusual sales drop
+
+Start with a robust baseline such as rolling median / rolling mean and deviation threshold.
+
+Return:
+
+expected_sales
+actual_sales
+deviation
+percentage_change
+date
+store
+product
+anomaly_type
+INVENTORY DATA QUALITY
+
+Detect:
+
+negative stock
+impossible quantities
+missing references
+unexplained inventory jumps
+sales exceeding available inventory
+duplicate transaction IDs
+
+Every analytical result must preserve the source identifiers needed for evidence.
+
+Do not make business decisions with the LLM.
+
+Create typed or structured return objects where practical.
+
+Add unit tests for all important formulas.
+
+The code must work entirely offline except for future Gemini calls.
+
+After implementation, expose useful analytics through API endpoints so the frontend can eventually use them.
+
+Do NOT implement Gemini yet.
+
+Do NOT implement semantic retrieval yet.
+
+Focus only on deterministic, testable retail analytics.
+
+11. Why this stage matters so much
+
+This is the part judges will inspect if they're technically strong.
+
+They want:
+
+"clear separation between LLM reasoning and deterministic logic"
+
+So you should be able to point at:
+
+src/analytics.py
+
+
+and say:
+
+"All financial, inventory and risk calculations happen here. Gemini never calculates these values."
+
+That's a very strong engineering answer.
+
+12. Commit 3
+
+Run tests.
+
+Then:
+
+git add .
+git commit -m "feat: implement deterministic retail analytics engine"
+
+13. PROMPT 4 — Build the first actual Copilot
+
+Now we introduce Gemini.
+
+Google's current SDK supports the google-genai Python package and structured outputs, which is useful here because we want Gemini to return predictable intent/tool instructions rather than arbitrary text. 
+G
+Google AI for Developers
++1
+
+Google AI Studio Prompt 4 — Gemini Retail Copilot
+
+Continue from the existing project.
+
+Now integrate Gemini using the official Google GenAI Python SDK.
+
+Use:
+
+google-genai
+
+Read the API key ONLY from:
+
+GEMINI_API_KEY
+
+Never hard-code a key.
+
+Do not use any other external API.
+
+IMPORTANT ARCHITECTURE:
+
+Gemini is NOT the source of truth.
+
+The local database and deterministic analytics engine are the source of truth.
+
+Gemini should:
+
+Understand the user's question.
+Determine the appropriate analytical intent.
+Request/use deterministic analytical functions.
+Receive structured evidence from Python.
+Produce a grounded explanation.
+Provide recommendations only when supported by evidence.
+Explicitly state when data is insufficient.
+
+SUPPORTED INTENTS:
+
+SALES_PERFORMANCE
+INVENTORY_STATUS
+STOCKOUT_RISK
+SLOW_MOVERS
+OVERSTOCK
+SALES_ANOMALY
+STORE_COMPARISON
+GENERAL_RETAIL_ANALYSIS
+UNKNOWN
+
+Implement a structured intent schema.
+
+Example:
+
+{
+"intent": "STOCKOUT_RISK",
+"product": null,
+"store": "Hyderabad",
+"time_period": null,
+"requires_clarification": false
+}
+
+The model must not invent product IDs or store IDs.
+
+Resolve product/store names against the local database.
+
+If the requested product or store does not exist, explain that the data does not contain it.
+
+IMPLEMENT:
+
+src/copilot.py
+
+The copilot pipeline should be:
+
+USER QUESTION
+→ intent extraction
+→ entity resolution
+→ deterministic analytics
+→ evidence package
+→ Gemini explanation
+→ structured response
+
+Create a structured final response with fields:
+
+answer
+key_findings
+evidence
+recommendation
+assumptions
+limitations
+data_sufficient
+confidence_note
+
+Every numerical claim must correspond to evidence returned by Python.
+
+The final answer should use actual figures.
+
+Example:
+
+Question:
+"What is running out?"
+
+Good response:
+
+"3 products have high stockout risk.
+
+SKU-104 at Hyderabad:
+Current stock: 38 units
+7-day demand: 11.2 units/day
+Supplier lead time: 5 days
+Lead-time demand: 56 units
+Incoming stock: 0
+Risk score: 91/100
+
+Recommendation:
+Place a replenishment order, subject to manager approval."
+
+Bad response:
+
+"SKU-104 will definitely run out soon."
+
+Do not use unsupported certainty.
+
+FAILURE HANDLING:
+
+If GEMINI_API_KEY is missing:
+
+the application must still start
+analytical dashboard must still work
+chat should return a clear configuration message
+do not crash the application
+
+If Gemini request fails:
+
+return a graceful error
+if possible provide a deterministic fallback for supported queries
+never fabricate an answer
+
+If the user's question cannot be answered from available data:
+return:
+
+data_sufficient = false
+
+and clearly explain what information is missing.
+
+Do NOT implement advanced RAG yet.
+
+Focus on getting the basic grounded copilot working.
+
+14. The first real demo
+
+After Prompt 4, you should be able to type:
+
+What products are running out?
+
+And receive something like:
+
+3 products need attention.
+
+SKU-104 — Hyderabad
+Current stock: 38
+7-day demand: 11.2/day
+Lead time: 5 days
+Incoming: 0
+Risk score: 91/100
+
+Recommendation:
+Reorder approximately 75 units.
+
+Assumption:
+Recent demand remains representative.
+
+
+That's your first real MVP.
+
+15. Commit 4
+git add .
+git commit -m "feat: integrate grounded Gemini retail copilot"
+
+16. PROMPT 5 — Evidence and refusal system
+
+This is where you directly attack one of the most important judging criteria.
+
+Google AI Studio Prompt 5 — Evidence Grounding and Refusal
+
+Continue from the existing project.
+
+Now strengthen the copilot's evidence-grounding and uncertainty behavior.
+
+This requirement is mandatory:
+
+NEVER MAKE A CLAIM WITHOUT SUPPORTING DATA.
+
+Implement an explicit evidence layer.
+
+Every analytical result passed to Gemini must contain:
+
+source dataset/table
+relevant product ID
+relevant store ID
+date range
+raw values used
+calculated values
+formula or calculation description
+assumptions
+data-quality warnings if any
+
+Create:
+
+src/evidence.py
+
+Define an evidence structure such as:
+
+{
+"metric": "days_of_inventory",
+"value": 3.4,
+"unit": "days",
+"source": "inventory.csv + sales.csv",
+"period": "2026-08-30 to 2026-09-05",
+"calculation": "current_stock / average_daily_sales_7d"
+}
+
+The UI must allow the user to inspect the evidence behind a recommendation.
+
+IMPLEMENT STRICT REFUSAL RULES.
+
+The copilot must refuse or qualify the answer when:
+
+The requested product does not exist.
+The requested store does not exist.
+The date range has insufficient data.
+The requested metric cannot be calculated.
+The required data is missing.
+The user asks for a causal explanation that the data cannot establish.
+The system detects unreliable source data.
+The question requires external information that is not present locally.
+
+Example:
+
+User:
+"Why did sales fall?"
+
+If sales and inventory data show a decline but there is no competitor, customer-feedback, marketing, or external market data:
+
+The system should say:
+
+"Sales declined by X%, but the available data cannot establish the cause. Inventory availability was [figure] and price was [figure]. We do not have competitor pricing, customer feedback, or marketing data to determine why."
+
+Do NOT say:
+"Customers preferred competitors."
+
+unless competitor data exists.
+
+Add explicit distinction between:
+
+OBSERVED FACT
+CALCULATED METRIC
+INFERENCE
+RECOMMENDATION
+ASSUMPTION
+
+The UI should visually distinguish these.
+
+Add tests for:
+
+unsupported product
+missing data
+insufficient date range
+causal question without causal evidence
+Gemini failure
+
+Do not add unrelated features.
+
+17. This feature can win you points
+
+Imagine the judge asks:
+
+"Why did sales fall?"
+
+Your system says:
+
+Sales decreased 28.4%, from ₹4.2 lakh to ₹3.0 lakh. Inventory availability remained above 95%, so stockouts do not explain most of the decline. However, the available dataset contains no competitor pricing, customer feedback, or marketing data, so the cause cannot be established from the available evidence.
+
+That's exactly what the challenge asks for.
+
+18. Commit 5
+git add .
+git commit -m "feat: add evidence tracing and uncertainty handling"
+
+19. PROMPT 6 — Build "Attention Today"
+
+Now implement the central dashboard feature.
+
+Google AI Studio Prompt 6 — Attention Today and Recommendations
+
+Continue from the existing project.
+
+Now implement the "ATTENTION TODAY" decision engine.
+
+This is a core feature of PS03.
+
+Create:
+
+src/recommendations.py
+
+The engine must identify and rank:
+
+likely stockouts
+slow-moving inventory
+overstock
+unusual sales spikes
+unusual sales drops
+supplier delays
+inventory data-quality issues
+
+Every alert MUST contain:
+
+alert_type
+priority
+product
+store
+evidence
+business_impact
+recommendation
+assumptions
+reason
+
+Do not use Gemini to calculate priority.
+
+Use deterministic logic.
+
+Implement a transparent priority score.
+
+A reasonable starting point:
+
+priority_score =
+business_impact * urgency * evidence_strength
+
+Document exactly how each component is calculated.
+
+Business impact should consider appropriate factors such as:
+
+estimated lost revenue
+inventory value
+gross profit exposure
+
+Urgency should consider:
+
+days until expected stockout
+severity of anomaly
+age of slow-moving inventory
+
+Evidence strength should reflect:
+
+data completeness
+historical sample size
+model reliability
+
+Do not pretend this is scientifically calibrated if it is not.
+
+Recommendations should be restricted to actions supported by the available data:
+
+REORDER
+TRANSFER
+REDUCE_REORDERING
+PROMOTION_REVIEW
+INVESTIGATE
+STOCK_COUNT
+CONTACT_SUPPLIER
+MONITOR
+
+For example:
+
+If a product is low in Store A and excessive in Store B:
+
+Recommend:
+TRANSFER
+
+If a product has high stockout risk and no incoming stock:
+
+Recommend:
+REORDER
+
+If a product has high inventory and very low demand:
+
+Recommend:
+REDUCE_REORDERING or PROMOTION_REVIEW
+
+If sales suddenly fall while inventory is zero:
+
+Recommend:
+INVESTIGATE_STOCK_AVAILABILITY
+
+Do NOT recommend unsupported actions.
+
+Create an API endpoint:
+
+GET /api/attention
+
+Return the top 5 attention items.
+
+Create frontend dashboard components:
+
+KPI cards
+Attention Today list
+severity indicators
+evidence expandable panel
+recommendation
+assumptions
+
+The dashboard should work even if Gemini is unavailable.
+
+Gemini should only be used for natural-language explanations.
+
+The deterministic attention engine must work independently.
+
+20. Your dashboard should now look roughly like this
+┌───────────────────────────────────────────────┐
+│              RETAIL COPILOT                  │
+├───────────────────────────────────────────────┤
+│ Revenue       Profit       Inventory          │
+│ ₹4.82L        ₹1.21L       ₹18.4L             │
+│ +8.4%         +11.2%       -3.1%              │
+├───────────────────────────────────────────────┤
+│              ATTENTION TODAY                  │
+│                                               │
+│ 🔴 Stockout Risk                              │
+│ SKU-104 • Hyderabad                          │
+│ 3.4 days inventory • 91/100 risk              │
+│                                               │
+│ [View Evidence] [Recommendation]              │
+│                                               │
+│ 🟠 Overstock                                  │
+│ SKU-205 • Bengaluru                           │
+│ 94 days inventory vs 30-day target            │
+│                                               │
+│ 🟡 Sales Drop                                 │
+│ Category: Electronics                         │
+│ -31% vs previous period                       │
+└───────────────────────────────────────────────┘
+
+21. Commit 6
+git add .
+git commit -m "feat: add attention engine and evidence-backed recommendations"
+
+22. PROMPT 7 — Add local embeddings/RAG correctly
+
+Your requirements specifically mention embeddings, and Gemini's gemini-embedding-001 is available for text embeddings. Google documents it as a text embedding model and supports local retrieval architectures using embeddings. 
+G
+Google AI for Developers
+
+But do not use embeddings for sales calculations.
+
+Use embeddings for your generated business documents.
+
+For example:
+
+inventory_policy.md
+replenishment_policy.md
+store_operations.md
+
+
+Then:
+
+"What is the policy for emergency replenishment?"
+
+can retrieve the relevant policy.
+
+Give AI Studio:
+
+Google AI Studio Prompt 7 — Local Gemini Embedding Retrieval
+
+Continue from the existing project.
+
+Now implement a small local retrieval system for the business documents.
+
+STRICT NETWORK RULE:
+
+Gemini is the only external API.
+
+Use:
+gemini-embedding-001
+
+Do NOT use:
+
+Pinecone
+Weaviate
+Qdrant cloud
+hosted Chroma
+external vector database
+external RAG service
+
+Use local storage.
+
+Implement:
+
+src/retrieval.py
+
+Process:
+
+Read documents from:
+data/documents/
+
+Split documents into sensible chunks.
+
+Generate embeddings using:
+gemini-embedding-001
+
+Store the embeddings locally.
+
+If possible, precompute embeddings and commit the local index so application startup does not require expensive indexing.
+
+Use cosine similarity for local retrieval.
+
+Retrieve the top relevant chunks for policy/document questions.
+
+IMPORTANT:
+Do NOT use semantic retrieval as a replacement for SQL/database analytics.
+
+Use SQL/Python for:
+
+sales
+inventory
+revenue
+profit
+stockout
+forecasting
+anomalies
+
+Use embeddings for:
+
+policies
+procedures
+definitions
+operational documents
+
+When Gemini receives retrieved document context, include the document name and section/chunk identifier.
+
+The final response should distinguish:
+
+DATA EVIDENCE
+from
+POLICY EVIDENCE
+
+Example:
+
+Data evidence:
+"Current stock is 38 units."
+
+Policy evidence:
+"The replenishment policy requires manager approval for emergency orders."
+
+If embeddings cannot be generated because GEMINI_API_KEY is unavailable:
+
+application must still start
+dashboard must still work
+chat must clearly state that document retrieval is unavailable
+
+Do not allow retrieval failures to crash the application.
+
+23. Why this is the right RAG architecture
+
+Your data:
+
+sales.csv
+inventory.csv
+
+
+→ SQL / Pandas
+
+Your documents:
+
+inventory_policy.md
+replenishment_policy.md
+
+
+→ Embeddings / local retrieval
+
+Your reasoning:
+
+Gemini
+
+
+That gives you a very clean architecture:
+
+              USER
+                │
+                ▼
+             GEMINI
+                │
+        ┌───────┴────────┐
+        ▼                ▼
+   DATA QUESTION    POLICY QUESTION
+        │                │
+        ▼                ▼
+    SQL/Python       Embeddings
+        │                │
+        └───────┬────────┘
+                ▼
+             EVIDENCE
+                │
+                ▼
+             GEMINI
+                │
+                ▼
+             ANSWER
+
+24. Commit 7
+git add .
+git commit -m "feat: add local Gemini embedding retrieval for retail policies"
+
+25. PROMPT 8 — Difficult cases and demo readiness
+
+This is the final major engineering prompt.
+
+Google AI Studio Prompt 8 — Edge Cases, Testing and Demo Readiness
+
+Continue from the existing project.
+
+Now harden the application against the exact evaluation criteria.
+
+DO NOT add unrelated features.
+
+Evaluate the application against these requirements:
+
+python app.py starts the complete application.
+Application listens on port 8000.
+No second command is required.
+Frontend is served by Python.
+Python 3.11 compatible.
+requirements.txt is complete.
+GEMINI_API_KEY is read from the environment.
+No API key is stored in source code.
+Gemini is the only external API.
+No hosted vector database.
+No external RAG service.
+All sample data is local.
+Deterministic analytics are separate from Gemini.
+Answers contain actual numbers.
+Recommendations contain evidence.
+Assumptions are shown.
+Unsupported questions are refused rather than guessed.
+Gemini failures do not crash the application.
+Missing data is handled gracefully.
+Ambiguous questions are handled gracefully.
+The dashboard works even without Gemini.
+Application startup is fast.
+
+ADD TEST CASES FOR THESE SCENARIOS:
+
+CASE 1:
+"What products are likely to run out?"
+
+Expected:
+stockout results with actual numbers.
+
+CASE 2:
+"What products are overstocked?"
+
+Expected:
+inventory and days-of-inventory evidence.
+
+CASE 3:
+"How did SKU-001 perform this month?"
+
+Expected:
+sales, revenue, profit/margin and comparison.
+
+CASE 4:
+"What needs my attention today?"
+
+Expected:
+ranked attention list.
+
+CASE 5:
+"Why did sales fall?"
+
+Expected:
+only evidence-supported explanation.
+If causal evidence is unavailable, explicitly say so.
+
+CASE 6:
+"Tell me about product XYZ123456 that doesn't exist."
+
+Expected:
+clear not-found response.
+
+CASE 7:
+"What was our competitor's price?"
+
+Expected:
+refusal because competitor pricing is not in the dataset.
+
+CASE 8:
+"Why did customers stop buying this?"
+
+Expected:
+do not claim a customer reason without customer/market evidence.
+
+CASE 9:
+Data with zero sales and zero inventory.
+
+Expected:
+do not interpret this automatically as zero demand.
+
+CASE 10:
+Gemini API failure.
+
+Expected:
+application remains alive and deterministic dashboard continues working.
+
+CASE 11:
+Missing GEMINI_API_KEY.
+
+Expected:
+application starts and clearly reports that AI features are unavailable.
+
+CASE 12:
+Malformed query.
+
+Expected:
+friendly clarification instead of server error.
+
+Add:
+
+backend exception handling
+request validation
+logging
+timeouts for Gemini calls
+safe fallback behavior
+no stack traces shown to normal users
+
+Create a /api/health endpoint that reports application status.
+
+Create a /api/diagnostics endpoint suitable for local testing that does NOT expose secrets.
+
+Add a "Demo Mode" section or clearly deterministic sample data behavior so judges can reliably reproduce the intended scenarios.
+
+Do not add authentication or cloud deployment.
+
+Finally, review the entire codebase for unnecessary complexity and remove anything not needed for the requirements.
+
+26. Commit 8
+git add .
+git commit -m "test: harden copilot for edge cases and demo scenarios"
+
+27. Now make the README
+
+This part is very important because the judges explicitly require it.
+
+Give AI Studio:
+
+Google AI Studio Prompt 9 — Submission README
+
+Create or update README.md for the final hackathon submission.
+
+CRITICAL:
+The FIRST line MUST be exactly:
+
+TRACK_ID=PS6
+
+There must be absolutely nothing else on that first line.
+
+After that line, document:
+
+Project name
+What the project does
+Problem being solved
+Architecture
+Key features
+How deterministic analytics and Gemini are separated
+How evidence grounding works
+How local embeddings/retrieval works
+Data files generated
+Business documents generated
+How to install
+How to run
+Environment variable:
+GEMINI_API_KEY
+No API key is committed
+How to run tests
+Demo scenarios
+Known limitations
+Demo video link placeholder
+
+The installation instructions MUST work from the repository root:
+
+pip install -r requirements.txt
+
+then:
+
+python app.py
+
+Do not require any second terminal or frontend build step.
+
+Mention that the complete frontend is served by the Python application.
+
+Document the major data tables/files and their purpose.
+
+Document the major KPIs and formulas used.
+
+Document the refusal behavior and unsupported-question handling.
+
+Do not claim features that are not actually implemented.
+
+Do not include secrets.
+
+Keep the README concise enough for a judge to quickly understand the project.
+
+28. Then perform the most important test
+
+This is something I strongly recommend you do before adding anything else.
+
+Pretend you are a judge.
+
+Create a completely fresh directory.
+
+Clone your GitHub repository.
+
+Then:
+
+pip install -r requirements.txt
+
+
+Then:
+
+python app.py
+
+
+Nothing else.
+
+Open:
+
+http://localhost:8000
+
+
+If that works, you've passed the most basic functional requirement.
+
+29. Your final Git history should look like this
+
+Something like:
+
+commit 8
+test: harden copilot for edge cases and demo scenarios
+
+commit 7
+feat: add local Gemini embedding retrieval
+
+commit 6
+feat: add attention engine and evidence-backed recommendations
+
+commit 5
+feat: add evidence tracing and uncertainty handling
+
+commit 4
+feat: integrate grounded Gemini retail copilot
+
+commit 3
+feat: implement deterministic retail analytics engine
+
+commit 2
+feat: add realistic retail datasets and business documents
+
+commit 1
+feat: initialize retail copilot application
+
+
+This is far better than:
+
+commit 1
+final project
+
+
+because the evaluation explicitly looks for real progression.
+
+30. Don't add these things
+
+For this hackathon, I would explicitly tell AI Studio not to add:
+
+❌ Firebase
+❌ Supabase
+❌ MongoDB Atlas
+❌ PostgreSQL cloud
+❌ Pinecone
+❌ Weaviate cloud
+❌ OpenAI
+❌ Claude
+❌ external APIs
+❌ external datasets
+❌ LangSmith
+❌ hosted RAG
+❌ external memory
+❌ authentication
+❌ Kubernetes
+❌ Docker requirement
+❌ complicated microservices
+
+
+Your constraint is actually a gift.
+
+You can make the architecture extremely clean:
+
+Python
++
+SQLite/CSV
++
+Pandas
++
+scikit-learn
++
+Gemini
++
+local embeddings
++
+local frontend
+
+31. What I would use technically
+
+My recommended stack:
+
+Layer	Technology
+Backend	FastAPI
+Server	Uvicorn
+Database	SQLite
+Data analysis	Pandas + NumPy
+ML	scikit-learn
+LLM	Gemini
+Gemini SDK	google-genai
+Embeddings	gemini-embedding-001
+Vector search	NumPy cosine similarity
+Frontend	HTML/CSS/JS
+Charts	Lightweight local JS/chart library or CSS/SVG
+Validation	Pydantic
+Tests	pytest
+Configuration	environment variables
+
+Google's current documentation recommends the google-genai SDK for Python, and its embedding API supports gemini-embedding-001. 
+G
+Google AI for Developers
++1
+
+32. One thing I would change from a typical AI Studio build
+
+I would not make the application entirely dependent on Gemini.
+
+Imagine the judge removes the Gemini key temporarily.
+
+Your dashboard should still show:
+
+Revenue
+Inventory
+Stockout risk
+Slow movers
+Overstock
+Anomalies
+Attention Today
+
+
+Only:
+
+Natural language copilot
++
+semantic policy retrieval
+
+
+should become unavailable/degraded.
+
+That is excellent engineering because the core business application still works.
+
+33. The three layers you should explain to judges
+
+If they ask:
+
+"How does your AI actually work?"
+
+Say:
+
+Layer 1 — Ground Truth
+SQLite + CSV
+
+
+Contains:
+
+Products
+Stores
+Sales
+Inventory
+Suppliers
+Purchase orders
+Policies
+
+Layer 2 — Deterministic Intelligence
+Python
+
+
+Calculates:
+
+Revenue
+Profit
+Inventory
+DOH
+Turnover
+Stockout risk
+Anomalies
+Slow movers
+Overstock
+Priority
+
+Layer 3 — Generative Intelligence
+Gemini
+
+
+Does:
+
+Intent understanding
+Tool selection
+Explanation
+Natural language
+Evidence synthesis
+Recommendation presentation
+Uncertainty communication
+
+
+That's a very strong answer.
+
+34. Your strongest demo flow
+
+You only have 2–5 minutes.
+
+Don't demonstrate 30 features.
+
+Do this.
+
+Demo 1 — Normal case
+
+Ask:
+
+"What needs my attention today?"
+
+Show:
+
+3 stockout risks
+4 overstocked products
+2 sales anomalies
+
+
+Click the top stockout.
+
+Show:
+
+Current stock: 38
+Demand: 11.2/day
+Lead time: 5 days
+Incoming: 0
+Risk: 91/100
+
+
+Then:
+
+"What should I do?"
+
+AI:
+
+Reorder approximately 75 units, subject to manager approval.
+
+Then open:
+
+Evidence
+
+This demonstrates:
+
+AI
+analytics
+numbers
+recommendation
+evidence
+assumptions
+35. Demo 2 — Difficult case
+
+Ask:
+
+"Why did sales fall for Product X?"
+
+Your system should say:
+
+Sales declined 31.8%.
+
+However, the available data cannot establish
+the cause.
+
+Inventory availability:
+96%
+
+Price:
+unchanged
+
+We do not have:
+- competitor prices
+- customer feedback
+- marketing data
+
+Therefore I cannot reliably attribute the decline
+to a specific cause.
+
+
+This is probably the most important demo moment.
+
+Because you're demonstrating that your AI doesn't hallucinate.
+
+36. Demo 3 — Another strong question
+
+Ask:
+
+"Which products should I reorder?"
+
+System:
+
+SKU-104
+Current: 38
+Demand: 11.2/day
+Lead time: 5 days
+Incoming: 0
+Risk: 91
+Recommendation: 75 units
+
+SKU-221
+Current: 12
+Demand: 5.8/day
+Lead time: 3 days
+Incoming: 50
+Risk: Low
+Recommendation: No order
+
+
+This shows something important:
+
+The AI understands incoming inventory, rather than blindly ordering whenever stock is low.
+
+37. Eventually add one "wow" feature
+
+Once all of the above is stable, I would add exactly one advanced capability.
+
+My choice:
+
+Store-to-store transfer
+
+Ask:
+
+"Can I solve any stockout without buying from a supplier?"
+
+Then:
+
+SKU-104
+
+Hyderabad
+Demand = 11.2/day
+Stock = 10
+HIGH RISK
+
+Bengaluru
+Demand = 2.1/day
+Stock = 180
+EXCESS
+
+Recommendation:
+Transfer 50 units
+Bengaluru → Hyderabad
+
+Why:
+Hyderabad faces shortage.
+Bengaluru has excess.
+Transfer avoids supplier lead time.
+
+
+That is an excellent hackathon demo.
+
+38. One more architectural improvement
+
+If you have time, introduce this structure:
+
+src/
+│
+├── domain/
+│   ├── inventory.py
+│   ├── sales.py
+│   └── products.py
+│
+├── analytics/
+│   ├── sales_metrics.py
+│   ├── inventory_metrics.py
+│   ├── stockout.py
+│   └── anomalies.py
+│
+├── ai/
+│   ├── gemini.py
+│   ├── intent.py
+│   └── prompts.py
+│
+├── retrieval/
+│   ├── embeddings.py
+│   └── search.py
+│
+├── recommendations/
+│   └── engine.py
+│
+└── api/
+    └── routes.py
+
+
+But only do this after the basic application works.
+
+Don't spend 4 hours making folders while the application doesn't run.
+
+39. Your implementation priority
+
+If you're under time pressure, use this exact priority:
+
+                    MUST HAVE
+                       │
+                       ▼
+                Application starts
+                       │
+                       ▼
+                 Retail data loads
+                       │
+                       ▼
+              Deterministic analytics
+                       │
+                       ▼
+                Stockout detection
+                       │
+                       ▼
+                Attention dashboard
+                       │
+                       ▼
+                Gemini copilot
+                       │
+                       ▼
+             Evidence + assumptions
+                       │
+                       ▼
+                 Refusal handling
+                       │
+                       ▼
+                   Testing
+                       │
+                       ▼
+                  README/demo
+
+
+Then:
+
+                    NICE TO HAVE
+                       │
+                       ▼
+              Local document RAG
+                       │
+                       ▼
+              Store transfers
+                       │
+                       ▼
+                What-if analysis
+                       │
+                       ▼
+              Supplier intelligence
+
+40. The key principle for every future prompt
+
+Whenever you ask Google AI Studio to add something, append this:
+
+"Do not break existing functionality. Do not replace working modules unnecessarily. Make the smallest change necessary. Preserve the python app.py single-command startup. Do not introduce external APIs. Do not hard-code secrets. Run/test the affected functionality before finishing."
+
+This will prevent AI coding agents from repeatedly rewriting your project.
+
+41. And one very important Gemini rule
+
+Your application should never do this:
+
+CSV
+ ↓
+Gemini
+ ↓
+"What is the revenue?"
+
+
+Instead:
+
+CSV
+ ↓
+Python
+ ↓
+revenue = ₹482,300
+ ↓
+Gemini
+ ↓
+"Revenue this month was ₹4.82 lakh..."
+
+
+Likewise:
+
+Python:
+stockout_risk = 91
+
+
+Then Gemini:
+
+"SKU-104 has a high stockout risk of 91/100..."
+
+The number came from your system.
+
+That's grounded GenAI, rather than simply putting an LLM on top of a spreadsheet.
+
+42. Your final product in one sentence
+
+If the judge asks:
+
+"What did you build?"
+
+Your answer should be:
+
+"Retail Copilot is an evidence-grounded AI decision assistant that combines deterministic sales and inventory analytics with Gemini to identify what needs attention today, explain the underlying numbers and assumptions, recommend an action, and explicitly refuse unsupported conclusions."
+
+That sentence maps almost one-to-one onto the evaluation criteria.
+
+The build order I want you to follow
+
+Do not jump ahead.
+
+Start with Prompt 1 only.
+
+Once Google AI Studio generates the initial project, run python app.py and verify port 8000. Then commit it. After that, use Prompt 2, test the data, commit, and continue sequentially.
+
+This incremental approach is especially important here because the judges aren't only evaluating whether the final UI looks good—they explicitly evaluate engineering progression, deterministic-vs-LLM separation, graceful failures, grounding, and difficult cases.
+
+And because Gemini's current API supports structured outputs, we can make the AI return controlled intent/response structures rather than relying on fragile free-form parsing. 
+G
+Google AI for Developers
+
+G
+Sources

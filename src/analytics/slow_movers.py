@@ -43,6 +43,7 @@ def detect_slow_moving_products(
             i.store_id,
             st.store_name,
             i.product_id,
+            p.sku,
             p.product_name,
             p.category,
             p.cost_price,
@@ -61,7 +62,7 @@ def detect_slow_moving_products(
     if store_id:
         query += " AND i.store_id = ?"
         params.append(store_id)
-    query += " GROUP BY i.store_id, st.store_name, i.product_id, p.product_name, p.category, p.cost_price, p.selling_price, i.closing_stock"
+    query += " GROUP BY i.store_id, st.store_name, i.product_id, p.sku, p.product_name, p.category, p.cost_price, p.selling_price, i.closing_stock"
 
     cursor.execute(query, params)
     rows = cursor.fetchall()
@@ -110,10 +111,12 @@ def detect_slow_moving_products(
             results.append(SlowMoverResult(
                 product_id=prod_id,
                 product_name=r["product_name"],
+                sku=r["sku"],
                 category=r["category"],
                 store_id=r["store_id"],
                 store_name=r["store_name"],
                 current_stock=current_stock,
+                cost_price=float(r["cost_price"]),
                 daily_sales_velocity=daily_velocity,
                 units_sold_in_period=units_sold,
                 days_of_inventory=days_of_inventory,

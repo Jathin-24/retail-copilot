@@ -105,6 +105,29 @@ def init_db():
     );
     """)
 
+    # Analytical indexes: date/store/product filtered aggregates drive the
+    # deterministic analytics engine; indexes keep scans fast on 63k+ rows.
+    cursor.execute("""
+    CREATE INDEX IF NOT EXISTS idx_sales_date
+    ON sales (date);
+    """)
+    cursor.execute("""
+    CREATE INDEX IF NOT EXISTS idx_sales_store_prod_date
+    ON sales (store_id, product_id, date);
+    """)
+    cursor.execute("""
+    CREATE INDEX IF NOT EXISTS idx_inventory_date
+    ON inventory (date);
+    """)
+    cursor.execute("""
+    CREATE INDEX IF NOT EXISTS idx_inventory_store_prod_date
+    ON inventory (store_id, product_id, date);
+    """)
+    cursor.execute("""
+    CREATE INDEX IF NOT EXISTS idx_purchase_orders_store_prod
+    ON purchase_orders (store_id, product_id);
+    """)
+
     conn.commit()
 
     # Seed from CSVs if empty

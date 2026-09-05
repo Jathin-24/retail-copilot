@@ -82,10 +82,12 @@ class InventoryTurnover:
 class SlowMoverResult:
     product_id: str
     product_name: str
+    sku: str
     category: str
     store_id: str
     store_name: str
     current_stock: int
+    cost_price: float
     daily_sales_velocity: float
     units_sold_in_period: int
     days_of_inventory: float

@@ -39,6 +39,7 @@ from fastapi import HTTPException, Query
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 from src.copilot import ask_copilot, get_copilot
+from src.recommendations import get_attention_today
 
 class CopilotChatRequest(BaseModel):
     question: str = Field(..., description="Natural language question from store manager.")
@@ -240,6 +241,19 @@ def get_data_quality_report():
     try:
         report = check_inventory_data_quality()
         return report.to_dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/attention")
+def get_attention_today_endpoint(limit: int = Query(5, description="Number of top attention items to return")):
+    """
+    Attention Today endpoint returning prioritized operational alerts.
+    Returns top N attention items ranked by deterministic priority score.
+    """
+    try:
+        result = get_attention_today(limit=limit)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -750,6 +750,17 @@
       </div>
     </div>
 
+    <!-- ATTENTION TODAY COMMAND CENTER -->
+    <div class="card">
+      <h2>⚡ Attention Today Command Center</h2>
+      <div class="attention-kpis" id="attention-kpis">
+        <!-- KPIs will be injected here -->
+      </div>
+      <div class="attention-list" id="attention-list">
+        <!-- Attention items will be injected here -->
+      </div>
+    </div>
+
     <!-- INTERACTIVE GEMINI COPILOT CONSOLE -->
     <div class="copilot-card">
       <div class="copilot-header">
@@ -1110,6 +1121,170 @@
       }
     }
 
+    let attentionItems = [];
+
+    function renderEvidence(ev) {
+      if (!ev) return '';
+      const rows = [];
+      const li = (label, value, unit) => `<li><strong>${label}:</strong> ${value}${unit ? ' ' + unit : ''}</li>`;
+      if (ev.metric) rows.push(li('Metric', ev.metric));
+      if (ev.value !== undefined && ev.value !== null) rows.push(li('Value', ev.value, ev.unit));
+      if (ev.calculation) rows.push(li('Calculation', ev.calculation));
+      if (ev.period) rows.push(li('Period', ev.period));
+      if (ev.source) rows.push(li('Source', ev.source));
+      if (ev.raw_values && typeof ev.raw_values === 'object') {
+        const raw = Object.entries(ev.raw_values)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(', ');
+        rows.push(`<li><strong>Raw data:</strong> ${raw}</li>`);
+      }
+      return `<ul style="margin: 0 0 12px 0; padding-left: 18px; color: #334155; font-size: 0.85rem;">${rows.join('')}</ul>`;
+    }
+
+    async function fetchAttentionToday() {
+      try {
+        const res = await fetch('/api/attention?limit=5');
+        if (!res.ok) throw new Error('Failed to fetch attention data');
+        const data = await res.json();
+
+        // Update KPIs
+        const kpisDiv = document.getElementById('attention-kpis');
+        kpisDiv.innerHTML = `
+          <div class="principles-grid">
+            <div class="principle-box">
+              <div class="principle-title">🚨 Critical Alerts</div>
+              <div class="principle-desc" style="font-size: 1.5rem; font-weight: 700; color: #dc2626;">${data.summary_metrics.critical_count}</div>
+            </div>
+            <div class="principle-box">
+              <div class="principle-title">💰 Total Capital at Risk</div>
+              <div class="principle-desc" style="font-size: 1.5rem; font-weight: 700;">₹${data.summary_metrics.total_financial_exposure_inr.toLocaleString()}</div>
+            </div>
+            <div class="principle-box">
+              <div class="principle-title">⚡ Urgent Actions Required</div>
+              <div class="principle-desc" style="font-size: 1.5rem; font-weight: 700; color: #ea580c;">${data.summary_metrics.critical_count + data.summary_metrics.high_count}</div>
+            </div>
+            <div class="principle-box">
+              <div class="principle-title">🚚 Delayed POs</div>
+              <div class="principle-desc" style="font-size: 1.5rem; font-weight: 700; color: #7c3aed;">${data.summary_metrics.delayed_pos_count}</div>
+            </div>
+          </div>
+        `;
+
+        // Update attention items list
+        const attentionDiv = document.getElementById('attention-list');
+        if (data.top_attention_items.length === 0) {
+          attentionDiv.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">No attention items detected.</p>';
+          return;
+        }
+
+        attentionDiv.innerHTML = '<h3 style="margin-bottom: 16px; color: #0f172a;">Top Priority Operational Alerts</h3>';
+
+        attentionItems = data.top_attention_items;
+
+        data.top_attention_items.forEach((item, index) => {
+          const priorityColor = item.priority === 'CRITICAL' ? '#dc2626' :
+                               item.priority === 'HIGH' ? '#ea580c' :
+                               item.priority === 'MEDIUM' ? '#d97706' : '#64748b';
+
+          const alertTypeIcons = {
+            'LIKELY_STOCKOUT': '📦',
+            'SLOW_MOVING': '⏳',
+            'OVERSTOCK': '📊',
+            'SALES_SPIKE': '📈',
+            'SALES_DROP': '📉',
+            'SUPPLIER_DELAY': '🚚',
+            'DATA_QUALITY': '🔍'
+          };
+
+          const alertTypeLabels = {
+            'LIKELY_STOCKOUT': 'Likely Stockout',
+            'SLOW_MOVING': 'Slow Moving',
+            'OVERSTOCK': 'Overstock',
+            'SALES_SPIKE': 'Sales Spike',
+            'SALES_DROP': 'Sales Drop',
+            'SUPPLIER_DELAY': 'Supplier Delay',
+            'DATA_QUALITY': 'Data Quality'
+          };
+
+          const exposureInr = item.business_impact?.exposure_inr ?? 0;
+
+          attentionDiv.innerHTML += `
+            <div class="card" style="border-left: 4px solid ${priorityColor};">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div>
+                  <h4 style="margin: 0 0 4px 0; color: #0f172a;">#${item.rank} ${alertTypeIcons[item.alert_type]} ${alertTypeLabels[item.alert_type]}</h4>
+                  <p style="margin: 0 0 8px 0; color: #334155; font-size: 0.9rem;">
+                    ${item.product?.product_name || 'Unknown Product'} (${item.product?.sku || ''}) at ${item.store?.store_name || 'Unknown Store'}
+                  </p>
+                  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <span style="background: ${priorityColor}20; color: ${priorityColor}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                      ${item.priority}
+                    </span>
+                    <span style="background: #f1f5f9; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">
+                      Score: ${item.priority_score.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <button onclick="toggleAlertDetails(${index})" id="details-btn-${index}" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">
+                    View Details
+                  </button>
+                </div>
+              </div>
+              <div style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                <p style="margin: 0 0 8px 0; color: #0f172a; font-weight: 600;">Recommended Action:</p>
+                <p style="margin: 0; color: #059669; font-size: 0.9rem;">${item.recommendation.details}</p>
+              </div>
+              <div id="attention-details-${index}" style="display: none; border-top: 1px solid #e2e8f0; margin-top: 12px; padding-top: 12px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px;">
+                    <p style="margin: 0 0 4px 0; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Business Impact</p>
+                    <p style="margin: 0; font-size: 0.9rem; color: #0f172a; font-weight: 600;">₹${exposureInr.toLocaleString()}</p>
+                    <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #64748b;">${item.business_impact?.metric_name || ''}</p>
+                    <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #475569;">${item.business_impact?.description || ''}</p>
+                  </div>
+                  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px;">
+                    <p style="margin: 0 0 4px 0; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Urgency</p>
+                    <p style="margin: 0; font-size: 0.9rem; color: #0f172a; font-weight: 600;">Score: ${item.urgency?.score}</p>
+                    <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #64748b;">Driver: ${item.urgency?.primary_factor || ''}</p>
+                    <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #475569;">${item.urgency?.description || ''}</p>
+                  </div>
+                  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px;">
+                    <p style="margin: 0 0 4px 0; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Evidence Strength</p>
+                    <p style="margin: 0; font-size: 0.9rem; color: #0f172a; font-weight: 600;">Score: ${item.evidence_strength?.score}</p>
+                    <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #64748b;">Completeness: ${item.evidence_strength?.data_completeness} &middot; Sample: ${item.evidence_strength?.sample_size_days}d &middot; ${item.evidence_strength?.model_type || ''}</p>
+                    <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #475569;">${item.evidence_strength?.description || ''}</p>
+                  </div>
+                </div>
+                <p style="margin: 0 0 6px 0; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Evidence</p>
+                ${renderEvidence(item.evidence)}
+                <p style="margin: 0 0 6px 0; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Rationale</p>
+                <p style="margin: 0 0 12px 0; color: #0f172a; font-size: 0.85rem;">${item.recommendation.rationale}</p>
+                <p style="margin: 0 0 6px 0; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Assumptions</p>
+                <ul style="margin: 0 0 12px 0; padding-left: 18px; color: #475569; font-size: 0.8rem;">
+                  ${item.assumptions.map(a => `<li>${a}</li>`).join('')}
+                </ul>
+                <p style="margin: 0; color: #334155; font-size: 0.85rem;">${item.reason}</p>
+              </div>
+            </div>
+          `;
+        });
+      } catch (err) {
+        console.error('Error fetching attention data:', err);
+        document.getElementById('attention-kpis').innerHTML = '<p style="color: #dc2626;">Error loading attention data</p>';
+        document.getElementById('attention-list').innerHTML = '<p style="color: #dc2626;">Failed to load attention items</p>';
+      }
+    }
+
+    function toggleAlertDetails(index) {
+      const panel = document.getElementById(`attention-details-${index}`);
+      const btn = document.getElementById(`details-btn-${index}`);
+      if (!panel) return;
+      const isHidden = panel.style.display === 'none' || panel.style.display === '';
+      panel.style.display = isHidden ? 'block' : 'none';
+      if (btn) btn.textContent = isHidden ? 'Hide Details' : 'View Details';
+    }
+
     function setQuery(text) {
       document.getElementById('copilot-query-input').value = text;
       submitCopilotQuery();
@@ -1407,6 +1582,7 @@
 
     checkHealth();
     checkCopilotStatus();
+    fetchAttentionToday();
   </script>
 </body>
 </html>
