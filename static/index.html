@@ -213,6 +213,210 @@
       margin-bottom: 2px;
     }
 
+    /* Copilot Chat UI */
+    .copilot-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .copilot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .copilot-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .copilot-status-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+    }
+
+    .pill-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .prompt-pill {
+      font-size: 0.8rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 6px 14px;
+      cursor: pointer;
+      color: #334155;
+      transition: all 0.15s ease;
+    }
+
+    .prompt-pill:hover {
+      background: #eff6ff;
+      color: #2563eb;
+      border-color: #93c5fd;
+      transform: translateY(-1px);
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .chat-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .chat-btn {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 0 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chat-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .chat-btn:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .response-box {
+      display: none;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 16px;
+    }
+
+    .response-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .response-answer {
+      font-size: 0.95rem;
+      color: #1e293b;
+      white-space: pre-wrap;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    .findings-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+
+    .findings-list {
+      list-style-type: none;
+      margin-bottom: 14px;
+    }
+
+    .findings-list li {
+      position: relative;
+      padding-left: 18px;
+      font-size: 0.88rem;
+      color: #334155;
+      margin-bottom: 4px;
+    }
+
+    .findings-list li::before {
+      content: "•";
+      position: absolute;
+      left: 6px;
+      color: #2563eb;
+      font-weight: bold;
+    }
+
+    .recommendation-callout {
+      background: #ecfdf5;
+      border-left: 4px solid #10b981;
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin-bottom: 14px;
+      font-size: 0.88rem;
+      color: #065f46;
+    }
+
+    .evidence-details {
+      margin-top: 12px;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .evidence-details summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: #2563eb;
+      user-select: none;
+    }
+
+    .evidence-pre {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-top: 8px;
+      font-family: monospace;
+      font-size: 0.78rem;
+    }
+
+    .footer-note {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 12px;
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 8px;
+    }
+
     footer {
       margin-top: 40px;
       font-size: 0.8rem;
@@ -239,7 +443,70 @@
           <div style="font-size: 0.8rem; color: var(--text-muted);" id="health-details">Connecting to /api/health</div>
         </div>
       </div>
-      <a href="/api/health" target="_blank" class="api-link">View GET /api/health &rarr;</a>
+      <div style="display: flex; gap: 12px;">
+        <a href="/api/copilot/status" target="_blank" class="api-link" style="font-size: 0.85rem;">Copilot Status &rarr;</a>
+        <a href="/api/health" target="_blank" class="api-link" style="font-size: 0.85rem;">View GET /api/health &rarr;</a>
+      </div>
+    </div>
+
+    <!-- INTERACTIVE GEMINI COPILOT CONSOLE -->
+    <div class="copilot-card">
+      <div class="copilot-header">
+        <div class="copilot-title">
+          <span>🤖 Retail Analytics Copilot</span>
+        </div>
+        <div class="copilot-status-badge" id="copilot-mode-badge">Initializing Copilot...</div>
+      </div>
+
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px;">
+        Ask questions in plain English. Python executes all mathematical calculations; Gemini explains the structured evidence with zero numerical hallucinations.
+      </p>
+
+      <div class="pill-container">
+        <button class="prompt-pill" onclick="setQuery('What is running out?')">🔥 What is running out?</button>
+        <button class="prompt-pill" onclick="setQuery('Which stores are performing well?')">📊 Which stores are performing well?</button>
+        <button class="prompt-pill" onclick="setQuery('What is running out in Hyderabad?')">📍 What is running out in Hyderabad?</button>
+        <button class="prompt-pill" onclick="setQuery('What is overstocked across stores?')">📦 What is overstocked?</button>
+        <button class="prompt-pill" onclick="setQuery('What products are slow moving?')">⏳ Show slow movers</button>
+        <button class="prompt-pill" onclick="setQuery('What sales anomalies occurred?')">⚡ Sales anomalies</button>
+      </div>
+
+      <div class="chat-input-row">
+        <input 
+          type="text" 
+          id="copilot-query-input" 
+          class="chat-input" 
+          placeholder="Type your retail inquiry (e.g. 'What is running out in Hyderabad?')..." 
+          onkeydown="if (event.key === 'Enter') submitCopilotQuery()"
+        />
+        <button id="copilot-send-btn" class="chat-btn" onclick="submitCopilotQuery()">
+          Ask Copilot
+        </button>
+      </div>
+
+      <div id="copilot-response" class="response-box">
+        <div class="response-header">
+          <span style="font-size: 0.82rem; font-weight: 700; color: #1e293b;" id="res-badge-intent">INTENT: -</span>
+          <span style="font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 4px;" id="res-badge-sufficient"></span>
+        </div>
+        <div class="response-answer" id="res-answer"></div>
+        
+        <div id="findings-wrapper" style="display: none;">
+          <div class="findings-title">Key Evidence Findings</div>
+          <ul class="findings-list" id="res-findings"></ul>
+        </div>
+
+        <div id="recommendation-wrapper" style="display: none;">
+          <div class="recommendation-callout" id="res-recommendation"></div>
+        </div>
+
+        <details class="evidence-details">
+          <summary>View Deterministic Python Evidence Payload</summary>
+          <pre class="evidence-pre" id="res-evidence"></pre>
+        </details>
+
+        <div class="footer-note" id="res-confidence"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -327,6 +594,13 @@
         Every analytical calculation is executed deterministically in Python using local SQLite data:
       </p>
       <div class="modules-list">
+        <a href="/api/copilot/query?question=What+is+running+out%3F" target="_blank" class="module-item" style="text-decoration: none; border-color: #93c5fd; background: #eff6ff;">
+          <div>
+            <span class="module-tag" style="background: #2563eb; color: #fff;">COPILOT</span>
+            <div class="module-name" style="color: #1d4ed8;">Copilot Query API</div>
+            <div class="module-info">Natural-language intent routing &amp; grounded explanation.</div>
+          </div>
+        </a>
         <a href="/api/analytics/store-performance" target="_blank" class="module-item" style="text-decoration: none;">
           <div>
             <span class="module-tag">GET</span>
@@ -413,7 +687,120 @@
         document.getElementById('health-dot').style.background = '#eab308';
       }
     }
+
+    async function checkCopilotStatus() {
+      try {
+        const res = await fetch('/api/copilot/status');
+        if (res.ok) {
+          const data = await res.json();
+          const badge = document.getElementById('copilot-mode-badge');
+          if (data.gemini_api_key_configured) {
+            badge.textContent = '● Gemini Live Reasoning (' + data.model + ')';
+            badge.style.background = '#f0fdf4';
+            badge.style.color = '#16a34a';
+            badge.style.borderColor = '#bbf7d0';
+          } else {
+            badge.textContent = '● Deterministic Grounded Mode (No API Key)';
+            badge.style.background = '#fefce8';
+            badge.style.color = '#ca8a04';
+            badge.style.borderColor = '#fef08a';
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load copilot status', e);
+      }
+    }
+
+    function setQuery(text) {
+      document.getElementById('copilot-query-input').value = text;
+      submitCopilotQuery();
+    }
+
+    async function submitCopilotQuery() {
+      const input = document.getElementById('copilot-query-input');
+      const question = input.value.trim();
+      if (!question) return;
+
+      const btn = document.getElementById('copilot-send-btn');
+      const resBox = document.getElementById('copilot-response');
+      const resAnswer = document.getElementById('res-answer');
+      const resIntent = document.getElementById('res-badge-intent');
+      const resSuff = document.getElementById('res-badge-sufficient');
+      const resFindings = document.getElementById('res-findings');
+      const findingsWrap = document.getElementById('findings-wrapper');
+      const resRec = document.getElementById('res-recommendation');
+      const recWrap = document.getElementById('recommendation-wrapper');
+      const resEvidence = document.getElementById('res-evidence');
+      const resConfidence = document.getElementById('res-confidence');
+
+      btn.disabled = true;
+      btn.textContent = 'Computing...';
+      resBox.style.display = 'block';
+      resAnswer.textContent = 'Executing deterministic analytics over local database and generating grounded explanation...';
+      findingsWrap.style.display = 'none';
+      recWrap.style.display = 'none';
+      resConfidence.textContent = '';
+      resEvidence.textContent = '';
+
+      try {
+        const res = await fetch('/api/copilot/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question })
+        });
+
+        if (!res.ok) throw new Error('Server returned HTTP ' + res.status);
+        const data = await res.json();
+
+        resAnswer.textContent = data.answer || 'No answer generated.';
+        
+        // Sufficiency badge
+        if (data.data_sufficient) {
+          resSuff.textContent = 'Data Sufficient';
+          resSuff.style.background = '#dcfce7';
+          resSuff.style.color = '#15803d';
+        } else {
+          resSuff.textContent = 'Data Insufficient';
+          resSuff.style.background = '#fee2e2';
+          resSuff.style.color = '#b91c1c';
+        }
+
+        // Findings
+        if (data.key_findings && data.key_findings.length > 0) {
+          resFindings.innerHTML = '';
+          data.key_findings.forEach(f => {
+            const li = document.createElement('li');
+            li.textContent = f;
+            resFindings.appendChild(li);
+          });
+          findingsWrap.style.display = 'block';
+        }
+
+        // Recommendation
+        if (data.recommendation) {
+          resRec.innerHTML = '<strong>Recommendation:</strong> ' + data.recommendation;
+          recWrap.style.display = 'block';
+        }
+
+        // Evidence JSON
+        resEvidence.textContent = JSON.stringify(data.evidence || {}, null, 2);
+
+        // Confidence
+        resConfidence.textContent = data.confidence_note || 'Ground truth verified via Python analytics.';
+
+      } catch (err) {
+        resAnswer.textContent = 'Error: ' + err.message;
+        resSuff.textContent = 'Failed';
+        resSuff.style.background = '#fee2e2';
+        resSuff.style.color = '#b91c1c';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Ask Copilot';
+      }
+    }
+
     checkHealth();
+    checkCopilotStatus();
   </script>
 </body>
 </html>

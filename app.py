@@ -36,7 +36,12 @@ from src.analytics import (
     check_inventory_data_quality
 )
 from fastapi import HTTPException, Query
-from typing import Optional
+from typing import Optional, Dict, Any
+from pydantic import BaseModel, Field
+from src.copilot import ask_copilot, get_copilot
+
+class CopilotChatRequest(BaseModel):
+    question: str = Field(..., description="Natural language question from store manager.")
 
 app = FastAPI(
     title="Retail - Sales and Inventory Copilot",
@@ -237,6 +242,71 @@ def get_data_quality_report():
         return report.to_dict()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# =========================================================================
+# GEMINI COPILOT REST API ENDPOINTS
+# Grounded on deterministic Python calculations.
+# =========================================================================
+
+@app.post("/api/copilot/chat")
+def post_copilot_chat(payload: CopilotChatRequest):
+    """
+    Accepts user question and returns structured grounded response:
+    answer, key_findings, evidence, recommendation, assumptions, limitations,
+    data_sufficient, confidence_note.
+    """
+    try:
+        return ask_copilot(payload.question)
+    except Exception as e:
+        return {
+            "answer": f"A processing error occurred: {str(e)}",
+            "key_findings": ["Encountered unexpected internal error."],
+            "evidence": {"error": str(e)},
+            "recommendation": "Try asking a supported retail question such as 'What is running out?'",
+            "assumptions": [],
+            "limitations": [],
+            "data_sufficient": False,
+            "confidence_note": "Failed during copilot execution."
+        }
+
+@app.get("/api/copilot/query")
+def get_copilot_query(question: str = Query(..., description="Retail analytics question")):
+    """
+    GET alternative for copilot query inspection via browser or curl.
+    """
+    try:
+        return ask_copilot(question)
+    except Exception as e:
+        return {
+            "answer": f"A processing error occurred: {str(e)}",
+            "key_findings": ["Encountered unexpected internal error."],
+            "evidence": {"error": str(e)},
+            "recommendation": None,
+            "assumptions": [],
+            "limitations": [],
+            "data_sufficient": False,
+            "confidence_note": "Failed during copilot execution."
+        }
+
+@app.get("/api/copilot/status")
+def get_copilot_status():
+    """
+    Returns runtime configuration and health of Gemini LLM integration.
+    """
+    api_key = os.environ.get("GEMINI_API_KEY")
+    is_configured = bool(api_key and len(api_key.strip()) > 0)
+    return {
+        "gemini_api_key_configured": is_configured,
+        "sdk": "google-genai",
+        "model": "gemini-2.5-flash",
+        "active_mode": "live_reasoning" if is_configured else "deterministic_fallback",
+        "source_of_truth": "Local SQLite Database and Deterministic Python Analytics Engine",
+        "status_message": (
+            "Gemini live reasoning active via google-genai SDK."
+            if is_configured else
+            "GEMINI_API_KEY is not configured. Copilot is functioning in deterministic fallback mode using verified local calculations."
+        )
+    }
 
 @app.get("/")
 def read_root():
