@@ -1,0 +1,109 @@
+product_id,sku,product_name,category,subcategory,brand,supplier_id,cost_price,selling_price,reorder_point,shelf_life_days
+PRD-001,SKU-PRE-001,Premium Masala Chai 250g,Beverages,Tea & Coffee,Tata Tea,SUP-001,110.0,150.0,30,365
+PRD-002,SKU-SOU-002,South Indian Filter Coffee 200g,Beverages,Tea & Coffee,Bru Gold,SUP-001,130.0,185.0,25,270
+PRD-003,SKU-ELE-003,Electrolyte Hydration Drink 500ml,Beverages,Energy & Sports,Enerzal,SUP-001,35.0,50.0,40,180
+PRD-004,SKU-COL-004,Cold Pressed Alphonso Mango Juice 500ml,Beverages,Juices,Raw Pressery,SUP-001,70.0,110.0,50,45
+PRD-005,SKU-PUR-005,Pure Coconut Water 200ml,Beverages,Juices,Paper Boat,SUP-001,30.0,45.0,35,120
+PRD-006,SKU-SPA-006,Sparkling Jeera Soda 300ml,Beverages,Carbonated,Lahori,SUP-001,15.0,25.0,40,180
+PRD-007,SKU-ORG-007,Organic Green Tea Lemon 25 bags,Beverages,Tea & Coffee,Organic India,SUP-001,160.0,240.0,20,540
+PRD-008,SKU-BAD-008,Badam Milk Drink 200ml,Beverages,Dairy Drinks,Amul,SUP-001,28.0,40.0,30,90
+PRD-009,SKU-APP-009,Apple Cider Vinegar 500ml,Beverages,Health Drinks,Kapiva,SUP-005,220.0,350.0,15,730
+PRD-010,SKU-PRE-010,Premium Darjeeling First Flush 100g,Beverages,Tea & Coffee,Goodwyn,SUP-001,380.0,550.0,10,540
+PRD-011,SKU-AML-011,Amla Aloe Vera Juice 1L,Beverages,Health Drinks,Baidyanath,SUP-005,140.0,210.0,15,365
+PRD-012,SKU-ART-012,Artisanal Dark Chocolate Mocha Drink,Beverages,Specialty,Smoor,SUP-001,120.0,190.0,15,120
+PRD-013,SKU-INS-013,Instant Chicory Coffee Mix 100g,Beverages,Tea & Coffee,Nescafe,SUP-001,85.0,125.0,25,365
+PRD-014,SKU-KES-014,Kesar Pista Thandai Syrup 750ml,Beverages,Syrups,Guruji,SUP-001,210.0,320.0,12,365
+PRD-015,SKU-ROA-015,Roasted Makhana Himalayan Salt 80g,Snacks,Healthy Snacks,Farmley,SUP-002,90.0,140.0,25,180
+PRD-016,SKU-BIK-016,Bikaneri Bhujia Sev 400g,Snacks,Namkeen,Haldiram,SUP-002,85.0,120.0,40,180
+PRD-017,SKU-MAS-017,Masala Potato Wafers 120g,Snacks,Chips,Balaji,SUP-002,28.0,40.0,50,120
+PRD-018,SKU-MUL-018,Multigrain Methi Khakhra 200g,Snacks,Traditional,Jabsons,SUP-002,55.0,80.0,30,150
+PRD-019,SKU-ART-019,Artisanal Dark Chocolate Bar 70% 80g,Snacks,Chocolates,Amul Dark,SUP-002,65.0,100.0,30,270
+PRD-020,SKU-SAL-020,Salted California Almonds 200g,Snacks,Dry Fruits,Nutraj,SUP-002,180.0,260.0,20,365
+PRD-021,SKU-SPI-021,Spicy Peri Peri Cashews 150g,Snacks,Dry Fruits,Go Organic,SUP-002,210.0,310.0,15,270
+PRD-022,SKU-DIG-022,Digestive Fiber Biscuits 300g,Snacks,Biscuits,NutriChoice,SUP-008,45.0,65.0,40,180
+PRD-023,SKU-CLA-023,Classic Butter Cookies 200g,Snacks,Bakery,Unibic,SUP-008,50.0,75.0,30,180
+PRD-024,SKU-ROA-024,Roasted Chana Garlic Flavor 200g,Snacks,Healthy Snacks,Haldiram,SUP-002,48.0,70.0,25,180
+PRD-025,SKU-BAN-025,Banana Chips Coconut Oil 150g,Snacks,Chips,Kerala Pure,SUP-002,60.0,90.0,25,90
+PRD-026,SKU-SOA-026,Soan Papdi Ghee Box 500g,Snacks,Sweets,Bikaji,SUP-002,140.0,210.0,15,180
+PRD-027,SKU-BAK-027,Baked Pita Chips Herb 150g,Snacks,Healthy Snacks,Wingreens,SUP-002,85.0,130.0,20,150
+PRD-028,SKU-CRE-028,Cream & Onion Corn Puffs 80g,Snacks,Puffs,Kurkure,SUP-002,22.0,35.0,45,120
+PRD-029,SKU-PRE-029,Premium Basmati Rice 5kg,Grocery,Grains,India Gate,SUP-003,420.0,580.0,20,730
+PRD-030,SKU-UNP-030,Unpolished Toor Dal 1kg,Grocery,Pulses,Tata Sampann,SUP-003,130.0,175.0,35,365
+PRD-031,SKU-COL-031,Cold Pressed Mustard Oil 1L,Grocery,Edible Oils,Fortune,SUP-003,145.0,195.0,30,365
+PRD-032,SKU-WHO-032,Whole Wheat Chakki Atta 5kg,Grocery,Flours,Aashirvaad,SUP-008,220.0,290.0,30,180
+PRD-033,SKU-ORG-033,Organic Desi Jaggery Powder 1kg,Grocery,Sweeteners,Patanjali,SUP-004,80.0,120.0,25,365
+PRD-034,SKU-TEL-034,Tellicherry Whole Black Pepper 100g,Grocery,Spices,Catch Spices,SUP-003,95.0,145.0,20,540
+PRD-035,SKU-PUR-035,Pure Ghee Cow Milk 500ml,Grocery,Dairy Staples,Mother Dairy,SUP-003,285.0,360.0,25,270
+PRD-036,SKU-MOO-036,Moong Dal Yellow Split 1kg,Grocery,Pulses,Organic Tattva,SUP-003,125.0,170.0,25,365
+PRD-037,SKU-ROC-037,Rock Salt Pink Himalayan 1kg,Grocery,Staples,Tata Salt,SUP-008,60.0,95.0,30,730
+PRD-038,SKU-KAS-038,Kashmiri Red Chilli Powder 200g,Grocery,Spices,MDH Spices,SUP-003,85.0,125.0,25,365
+PRD-039,SKU-ORG-039,Organic Quinoa Grain 500g,Grocery,Health Grains,True Elements,SUP-003,160.0,240.0,15,365
+PRD-040,SKU-REF-040,Refined Sunflower Oil Pouch 1L,Grocery,Edible Oils,Sunpure,SUP-003,110.0,145.0,40,365
+PRD-041,SKU-KAB-041,Kabuli Chana Giant 1kg,Grocery,Pulses,Rajdhani,SUP-003,140.0,190.0,20,365
+PRD-042,SKU-ORG-042,Organic Chia Seeds 250g,Grocery,Superfoods,Nutty Gritties,SUP-004,135.0,210.0,15,540
+PRD-043,SKU-PUR-043,Purifying Neem Face Wash 150ml,Personal Care,Skincare,Himalaya,SUP-005,120.0,175.0,30,730
+PRD-044,SKU-AYU-044,Ayurvedic Anti-Hair Fall Shampoo 340ml,Personal Care,Haircare,Kesh King,SUP-005,195.0,280.0,25,730
+PRD-045,SKU-MYS-045,Mysore Sandalwood Soap 3x125g,Personal Care,Bath & Body,Mysore Sandal,SUP-005,180.0,255.0,25,1095
+PRD-046,SKU-COL-046,Cold Pressed Virgin Coconut Hair Oil 200ml,Personal Care,Haircare,Parachute,SUP-005,95.0,135.0,35,730
+PRD-047,SKU-HER-047,Herbal Ayurvedic Toothpaste 200g,Personal Care,Oral Care,Dabur Red,SUP-007,80.0,115.0,40,730
+PRD-048,SKU-INT-048,Intensive Aloe Vera Body Lotion 400ml,Personal Care,Skincare,Vaseline,SUP-005,220.0,325.0,20,730
+PRD-049,SKU-KUM-049,Kumkumadi Radiance Face Serum 30ml,Personal Care,Skincare,Ayuga,SUP-005,420.0,699.0,12,540
+PRD-050,SKU-NAT-050,Natural Rose Water Spray 200ml,Personal Care,Skincare,Dabur Gulabari,SUP-007,65.0,95.0,25,730
+PRD-051,SKU-REF-051,Refreshing Men Charcoal Deodorant 150ml,Personal Care,Fragrances,Wild Stone,SUP-005,135.0,210.0,25,1095
+PRD-052,SKU-ORG-052,Organic Bamboo Toothbrush 4-pack,Personal Care,Oral Care,Terrabrush,SUP-005,110.0,180.0,20,1095
+PRD-053,SKU-HER-053,Herbal Sunscreen Lotion SPF 50 100ml,Personal Care,Skincare,Lotus Herbals,SUP-005,260.0,395.0,15,730
+PRD-054,SKU-ONI-054,Onion Black Seed Hair Oil 150ml,Personal Care,Haircare,WOW Skin Science,SUP-005,280.0,449.0,15,730
+PRD-055,SKU-GEN-055,Gentle Baby Bath Wash 400ml,Personal Care,Baby Care,Sebamed,SUP-005,410.0,580.0,10,730
+PRD-056,SKU-HAN-056,Hand Sanitizer Gel 500ml,Personal Care,Hygiene,Dettol,SUP-005,110.0,160.0,30,730
+PRD-057,SKU-CIT-057,Citrus Pine Surface Disinfectant Floor Cleaner 1L,Home Care,Floor Care,Lizol,SUP-006,130.0,185.0,35,730
+PRD-058,SKU-LIM-058,Lime & Neem Dishwash Gel Refill 750ml,Home Care,Kitchen Care,Vim Gel,SUP-006,115.0,160.0,40,730
+PRD-059,SKU-BIO-059,Bio-Enzyme Laundry Detergent Powder 2kg,Home Care,Laundry,Surf Excel,SUP-006,280.0,380.0,30,730
+PRD-060,SKU-AUT-060,Automatic Mosquito Vaporizer Refill Twin Pack,Home Care,Pest Control,GoodKnight,SUP-006,110.0,155.0,35,730
+PRD-061,SKU-LAV-061,Lavender Room Air Freshener Spray 240ml,Home Care,Air Care,Godrej aer,SUP-006,115.0,169.0,25,730
+PRD-062,SKU-TOI-062,Toilet Bowl Descaler Cleaner 1L,Home Care,Sanitary,Harpic,SUP-006,125.0,175.0,35,730
+PRD-063,SKU-MIC-063,Microfiber Multipurpose Cleaning Cloths 4-pack,Home Care,Cleaning Tools,Scotch-Brite,SUP-006,140.0,220.0,20,1460
+PRD-064,SKU-FAB-064,Fabric Conditioner Comfort Morning Fresh 860ml,Home Care,Laundry,Comfort,SUP-006,155.0,225.0,25,730
+PRD-065,SKU-STE-065,Steel Wool Scrub Pads Pack of 6,Home Care,Kitchen Care,Exo,SUP-006,45.0,70.0,40,1460
+PRD-066,SKU-DRA-066,Drain Clog Remover Crystals 250g,Home Care,Sanitary,Kiwi Dranex,SUP-006,65.0,99.0,15,730
+PRD-067,SKU-HER-067,Herbal Camphor Cones Air Purifier 60g,Home Care,Air Care,Mangalam,SUP-006,120.0,180.0,20,365
+PRD-068,SKU-KIT-068,Kitchen Degreaser Surface Spray 500ml,Home Care,Kitchen Care,Colin,SUP-006,110.0,165.0,20,730
+PRD-069,SKU-ECO-069,Eco Bamboo Paper Towels 2 Rolls,Home Care,Paper Goods,Beco,SUP-006,130.0,199.0,20,1095
+PRD-070,SKU-BRA-070,Braided Fast Charging USB-C Cable 1.5m,Electronics Accessories,Cables,Portronics,SUP-011,140.0,299.0,25,1460
+PRD-071,SKU-DUA-071,Dual Port 20W PD USB Wall Charger,Electronics Accessories,Chargers,Ambrane,SUP-011,280.0,599.0,20,1460
+PRD-072,SKU-WIR-072,Wireless Bluetooth Earbuds IPX5,Electronics Accessories,Audio,boAt,SUP-011,650.0,1299.0,20,730
+PRD-073,SKU-HEA-073,Heavy Duty 4-Way Surge Protector Spike Guard,Electronics Accessories,Power,V-Guard,SUP-012,340.0,550.0,15,1825
+PRD-074,SKU-ERG-074,Ergonomic Aluminium Mobile Phone Desk Stand,Electronics Accessories,Stands,ELV,SUP-011,160.0,349.0,15,1825
+PRD-075,SKU-TEM-075,Tempered Glass Screen Protector 9H 2-pack,Electronics Accessories,Protection,Spigen,SUP-011,190.0,499.0,20,1460
+PRD-076,SKU-HIG-076,High Speed USB 3.0 Card Reader 4-in-1,Electronics Accessories,Data Transfer,Quantum,SUP-011,120.0,249.0,15,1460
+PRD-077,SKU-SLI-077,Slim Magnetic Car Vent Phone Mount,Electronics Accessories,Automotive,Gizga,SUP-011,140.0,299.0,15,1825
+PRD-078,SKU-CAT-078,Cat-6 High Speed Gigabit Ethernet Cable 3m,Electronics Accessories,Networking,D-Link,SUP-011,110.0,220.0,15,1825
+PRD-079,SKU-SIL-079,Silicone Cable Organizer Clips 6-pack,Electronics Accessories,Cable Management,Tizum,SUP-011,75.0,160.0,20,1825
+PRD-080,SKU-WAT-080,Waterproof Bluetooth Bicycle Speaker,Electronics Accessories,Audio,Zebronics,SUP-011,520.0,999.0,12,730
+PRD-081,SKU-REC-081,Rechargeable Wireless Silent Optical Mouse,Electronics Accessories,Peripherals,Lenovo,SUP-011,380.0,799.0,15,1095
+PRD-082,SKU-UNI-082,Universal International Travel Adapter,Electronics Accessories,Power,Syska,SUP-012,290.0,599.0,15,1825
+PRD-083,SKU-COM-083,Combed Cotton Men Solid Crew T-Shirt Navy M,Apparel,Men Tops,FabIndia,SUP-009,320.0,599.0,15,1825
+PRD-084,SKU-ORG-084,Organic Handloom Linen Short Kurta Olive L,Apparel,Men Ethnic,FabIndia,SUP-009,750.0,1499.0,10,1825
+PRD-085,SKU-BAM-085,Bamboo Fiber Cushioned Ankle Socks 3-pack,Apparel,Innerwear,Jockey,SUP-009,190.0,349.0,25,1825
+PRD-086,SKU-PUR-086,Pure Cotton Printed Jaipur Dupatta,Apparel,Women Ethnic,FabIndia,SUP-009,280.0,549.0,12,1825
+PRD-087,SKU-WOM-087,Women Breathable Yoga Track Pants Black M,Apparel,Activewear,Zivame,SUP-009,480.0,899.0,15,1825
+PRD-088,SKU-MEN-088,Men Formal Cotton Dress Socks 2-pack,Apparel,Innerwear,Van Heusen,SUP-009,140.0,260.0,20,1825
+PRD-089,SKU-PUR-089,Pure Khadi Cotton Handkerchiefs 6-pack,Apparel,Accessories,Khadi Naturals,SUP-009,120.0,220.0,20,1825
+PRD-090,SKU-EMB-090,Embroidered Cotton Tote Bag Ecru,Apparel,Accessories,FabIndia,SUP-009,260.0,499.0,15,1825
+PRD-091,SKU-MIC-091,Microfiber Quick Dry Gym Towel 50x100cm,Apparel,Activewear,Decathlon,SUP-009,160.0,299.0,15,1825
+PRD-092,SKU-MEN-092,Men Breathable Cotton Boxer Shorts Pack of 2,Apparel,Innerwear,Jockey,SUP-009,280.0,499.0,20,1825
+PRD-093,SKU-HAN-093,Handloom Kalamkari Print Cotton Scarf,Apparel,Women Ethnic,FabIndia,SUP-009,210.0,399.0,15,1825
+PRD-094,SKU-COT-094,Cotton Canvas Daily Apron with Pockets,Apparel,Utility,Home Center,SUP-009,180.0,349.0,12,1825
+PRD-095,SKU-SEA-095,Seamless Cotton Low-Cut Sports Socks 3-pack,Apparel,Innerwear,Puma,SUP-009,220.0,399.0,20,1825
+PRD-096,SKU-A5 -096,A5 Executive Hardbound Ruled Journal 192p,Stationery,Notebooks,Classmate,SUP-010,140.0,240.0,25,1825
+PRD-097,SKU-SMO-097,Smooth Rollerball Liquid Gel Pens 3-pack,Stationery,Pens,Camlin,SUP-010,85.0,135.0,40,1095
+PRD-098,SKU-NEO-098,Neon Repositionable Sticky Notes 3x3 4-pack,Stationery,Desk Notes,Post-it,SUP-010,110.0,175.0,30,1825
+PRD-099,SKU-DRY-099,Dry Erase Whiteboard Marker Set 4 Colors,Stationery,Markers,Faber-Castell,SUP-010,90.0,140.0,25,730
+PRD-100,SKU-HEA-100,Heavy Duty Metal Desktop Stapler No.10,Stationery,Desk Tools,Kangaro,SUP-010,95.0,150.0,20,3650
+PRD-101,SKU-ART-101,Artisan Calligraphy Fountain Pen & Nib Set,Stationery,Fine Writing,Parker,SUP-010,450.0,850.0,10,3650
+PRD-102,SKU-STA-102,Stainless Steel Craft Scissors 8-inch,Stationery,Desk Tools,Kokuyo,SUP-010,80.0,130.0,20,3650
+PRD-103,SKU-DOC-103,Document Expanding File Folder 12 Pockets,Stationery,Filing,Solo,SUP-010,160.0,260.0,15,1825
+PRD-104,SKU-FLU-104,Fluorescent Desk Highlighter Pen Set of 5,Stationery,Markers,Stabilo,SUP-010,140.0,220.0,25,730
+PRD-105,SKU-DUA-105,Dual Core Correction Tape 12m,Stationery,Desk Tools,Plus Japan,SUP-010,65.0,110.0,25,1460
+PRD-106,SKU-RET-106,Retractable Mechanical Pencil 0.7mm with Leads,Stationery,Drafting,Camlin,SUP-010,60.0,95.0,30,1825
+PRD-107,SKU-DES-107,Desktop Rotating Pen & Stationery Stand Wood,Stationery,Organizers,Cello,SUP-010,190.0,320.0,15,3650
+PRD-108,SKU-PLA-108,Plastic Ruler Shatterproof 30cm,Stationery,Measuring,Camlin,SUP-010,12.0,25.0,50,3650

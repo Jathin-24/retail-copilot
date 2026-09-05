@@ -1,0 +1,13 @@
+supplier_id,supplier_name,lead_time_days,minimum_order_quantity
+SUP-001,Nilgiri Beverages Ltd,4,40
+SUP-002,Haldiram Snacks Logistics,3,50
+SUP-003,Desi Agro Staples Corp,6,30
+SUP-004,Patanjali Organic Supplies,5,45
+SUP-005,Himalaya Wellness & Care,5,25
+SUP-006,Godrej Home Essentials,4,35
+SUP-007,Dabur Consumer Goods,5,40
+SUP-008,ITC Foods & Staples,4,60
+SUP-009,FabIndia Handlooms & Textiles,12,20
+SUP-010,Camlin Stationery Works,5,50
+SUP-011,Apex Electronics & Gadgets,25,100
+SUP-012,V-Guard Electrical Accessories,8,30

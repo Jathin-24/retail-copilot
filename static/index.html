@@ -321,6 +321,78 @@
       </div>
     </div>
 
+    <div class="card">
+      <h2>Deterministic Analytics API Endpoints</h2>
+      <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 16px;">
+        Every analytical calculation is executed deterministically in Python using local SQLite data:
+      </p>
+      <div class="modules-list">
+        <a href="/api/analytics/store-performance" target="_blank" class="module-item" style="text-decoration: none;">
+          <div>
+            <span class="module-tag">GET</span>
+            <div class="module-name">Store Performance</div>
+            <div class="module-info">Revenue, COGS, gross margins, and period-over-period growth.</div>
+          </div>
+        </a>
+        <a href="/api/analytics/product-performance?product_id=PRD-001&store_id=STR-001" target="_blank" class="module-item" style="text-decoration: none;">
+          <div>
+            <span class="module-tag">GET</span>
+            <div class="module-name">Product Performance</div>
+            <div class="module-info">Units sold, daily run-rate, ATV, and gross margin percent.</div>
+          </div>
+        </a>
+        <a href="/api/analytics/inventory-health" target="_blank" class="module-item" style="text-decoration: none;">
+          <div>
+            <span class="module-tag">GET</span>
+            <div class="module-name">Inventory Health</div>
+            <div class="module-info">Total units, valuation, 7d/30d ADS velocity, and runway.</div>
+          </div>
+        </a>
+        <a href="/api/analytics/inventory-turnover?product_id=PRD-001&store_id=STR-001" target="_blank" class="module-item" style="text-decoration: none;">
+          <div>
+            <span class="module-tag">GET</span>
+            <div class="module-name">Inventory Turnover</div>
+            <div class="module-info">COGS / average inventory cost and annualized turnover.</div>
+          </div>
+        </a>
+        <a href="/api/analytics/slow-movers" target="_blank" class="module-item" style="text-decoration: none;">
+          <div>
+            <span class="module-tag">GET</span>
+            <div class="module-name">Slow Movers</div>
+            <div class="module-info">Low velocity items with catalog age filtering &amp; audit evidence.</div>
+          </div>
+        </a>
+        <a href="/api/analytics/overstock" target="_blank" class="module-item" style="text-decoration: none;">
+          <div>
+            <span class="module-tag">GET</span>
+            <div class="module-name">Overstock Detection</div>
+            <div class="module-info">Days of inventory above target runway &amp; excess capital tied up.</div>
+          </div>
+        </a>
+        <a href="/api/analytics/stockout-risk?store_id=STR-001&product_id=PRD-004" target="_blank" class="module-item" style="text-decoration: none;">
+          <div>
+            <span class="module-tag">GET</span>
+            <div class="module-name">Stockout Risk Model</div>
+            <div class="module-info">Lead-time demand, safety stock, net position &amp; heuristic score.</div>
+          </div>
+        </a>
+        <a href="/api/analytics/anomalies" target="_blank" class="module-item" style="text-decoration: none;">
+          <div>
+            <span class="module-tag">GET</span>
+            <div class="module-name">Sales Anomalies</div>
+            <div class="module-info">Rolling baseline spikes and drops with statistical standard deviations.</div>
+          </div>
+        </a>
+        <a href="/api/analytics/data-quality" target="_blank" class="module-item" style="text-decoration: none;">
+          <div>
+            <span class="module-tag">GET</span>
+            <div class="module-name">Data Quality Audit</div>
+            <div class="module-info">Negative stock, impossible values, jumps, and duplicate checks.</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
     <footer>
       Retail - Sales and Inventory Copilot &bull; Single Command Startup: <code>python app.py</code>
     </footer>

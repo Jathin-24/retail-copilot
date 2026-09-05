@@ -22,6 +22,21 @@ load_dotenv()
 
 # Initialize core modules
 from src.database.schema import init_db
+from src.analytics import (
+    calculate_product_performance,
+    calculate_store_performance,
+    calculate_inventory_health,
+    calculate_inventory_turnover,
+    get_inventory_health_summary,
+    detect_slow_moving_products,
+    detect_overstocked_products,
+    calculate_stockout_risk,
+    assess_all_stockout_risks,
+    detect_sales_anomalies,
+    check_inventory_data_quality
+)
+from fastapi import HTTPException, Query
+from typing import Optional
 
 app = FastAPI(
     title="Retail - Sales and Inventory Copilot",
@@ -53,6 +68,175 @@ def health_check():
         "project": "Retail - Sales and Inventory Copilot",
         "version": "0.1.0"
     }
+
+# =========================================================================
+# DETERMINISTIC RETAIL ANALYTICS API ENDPOINTS
+# Calculations are executed in Python over local SQLite data. Not by Gemini.
+# =========================================================================
+
+@app.get("/api/analytics/product-performance")
+def get_product_performance(
+    product_id: Optional[str] = Query(None, description="Optional product ID. If omitted, returns ranked product overview."),
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    store_id: Optional[str] = Query(None, description="Optional store ID filter")
+):
+    try:
+        res = calculate_product_performance(
+            product_id=product_id,
+            start_date=start_date,
+            end_date=end_date,
+            store_id=store_id
+        )
+        if hasattr(res, "to_dict"):
+            return res.to_dict()
+        return res
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/store-performance")
+def get_store_performance(
+    store_id: Optional[str] = Query(None, description="Optional store ID. If omitted, returns comparison of all stores."),
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)")
+):
+    try:
+        res = calculate_store_performance(
+            store_id=store_id,
+            start_date=start_date,
+            end_date=end_date
+        )
+        if hasattr(res, "to_dict"):
+            return res.to_dict()
+        return res
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/inventory-health")
+def get_inventory_health(
+    store_id: Optional[str] = Query(None, description="Store ID"),
+    product_id: Optional[str] = Query(None, description="Product ID"),
+    as_of_date: Optional[str] = Query(None, description="Snapshot date (YYYY-MM-DD)")
+):
+    try:
+        if store_id and product_id:
+            res = calculate_inventory_health(store_id=store_id, product_id=product_id, as_of_date=as_of_date)
+            return res.to_dict()
+        return get_inventory_health_summary(as_of_date=as_of_date)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/inventory-turnover")
+def get_inventory_turnover(
+    product_id: Optional[str] = Query(None, description="Optional product ID filter"),
+    store_id: Optional[str] = Query(None, description="Optional store ID filter"),
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)")
+):
+    try:
+        res = calculate_inventory_turnover(
+            product_id=product_id,
+            store_id=store_id,
+            start_date=start_date,
+            end_date=end_date
+        )
+        return res.to_dict()
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/slow-movers")
+def get_slow_movers(
+    sales_threshold_daily: float = Query(0.20, description="Max daily sales velocity"),
+    inventory_threshold_units: int = Query(15, description="Min units in stock"),
+    min_catalog_age_days: int = Query(21, description="Min days since product launched"),
+    as_of_date: Optional[str] = Query(None, description="Evaluation date (YYYY-MM-DD)"),
+    store_id: Optional[str] = Query(None, description="Optional store ID")
+):
+    try:
+        results = detect_slow_moving_products(
+            sales_threshold_daily=sales_threshold_daily,
+            inventory_threshold_units=inventory_threshold_units,
+            min_catalog_age_days=min_catalog_age_days,
+            as_of_date=as_of_date,
+            store_id=store_id
+        )
+        return [r.to_dict() for r in results]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/overstock")
+def get_overstock(
+    target_days: float = Query(45.0, description="Target runway days of inventory"),
+    min_stock: int = Query(25, description="Min stock on hand to consider"),
+    as_of_date: Optional[str] = Query(None, description="Evaluation date (YYYY-MM-DD)"),
+    store_id: Optional[str] = Query(None, description="Optional store ID")
+):
+    try:
+        results = detect_overstocked_products(
+            target_days=target_days,
+            min_stock=min_stock,
+            as_of_date=as_of_date,
+            store_id=store_id
+        )
+        return [r.to_dict() for r in results]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/stockout-risk")
+def get_stockout_risk(
+    store_id: Optional[str] = Query(None, description="Store ID"),
+    product_id: Optional[str] = Query(None, description="Product ID"),
+    as_of_date: Optional[str] = Query(None, description="Snapshot date (YYYY-MM-DD)"),
+    min_risk_score: float = Query(20.0, description="Min risk score filter for catalog scan")
+):
+    try:
+        if store_id and product_id:
+            res = calculate_stockout_risk(store_id=store_id, product_id=product_id, as_of_date=as_of_date)
+            return res.to_dict()
+        results = assess_all_stockout_risks(store_id=store_id, as_of_date=as_of_date, min_risk_score=min_risk_score)
+        return [r.to_dict() for r in results]
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/anomalies")
+def get_sales_anomalies(
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    store_id: Optional[str] = Query(None, description="Optional store ID"),
+    product_id: Optional[str] = Query(None, description="Optional product ID"),
+    window_days: int = Query(14, description="Lookback rolling baseline window in days"),
+    min_pct_change: float = Query(50.0, description="Min percentage deviation from baseline")
+):
+    try:
+        results = detect_sales_anomalies(
+            start_date=start_date,
+            end_date=end_date,
+            store_id=store_id,
+            product_id=product_id,
+            window_days=window_days,
+            min_pct_change=min_pct_change
+        )
+        return [r.to_dict() for r in results]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analytics/data-quality")
+def get_data_quality_report():
+    try:
+        report = check_inventory_data_quality()
+        return report.to_dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 def read_root():

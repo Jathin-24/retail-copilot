@@ -12,22 +12,31 @@ def calculate_days_of_supply(days_lookback: int = 30) -> List[Dict[str, Any]]:
     """
     conn = get_db_connection()
     cursor = conn.cursor()
-    # Calculates daily velocity over recent window
+    
+    cursor.execute("SELECT MAX(date) FROM inventory")
+    latest_date_row = cursor.fetchone()
+    latest_date = latest_date_row[0] if latest_date_row and latest_date_row[0] else ""
+
+    # Calculates daily velocity over recent window from sales and joins with latest closing stock
     cursor.execute("""
         SELECT 
             i.store_id,
+            s.store_name,
             i.product_id,
             p.product_name,
-            s.store_name,
-            i.stock_on_hand,
-            COALESCE(SUM(sa.quantity_sold), 0) as total_sold_in_period
+            p.category,
+            p.reorder_point,
+            i.closing_stock as stock_on_hand,
+            COALESCE(SUM(sa.quantity), 0) as total_sold_in_period
         FROM inventory i
         JOIN products p ON i.product_id = p.product_id
         JOIN stores s ON i.store_id = s.store_id
         LEFT JOIN sales sa ON i.store_id = sa.store_id 
                            AND i.product_id = sa.product_id
-        GROUP BY i.store_id, i.product_id, p.product_name, s.store_name, i.stock_on_hand;
-    """)
+                           AND sa.date >= date(?, '-' || ? || ' days')
+        WHERE i.date = ?
+        GROUP BY i.store_id, s.store_name, i.product_id, p.product_name, p.category, p.reorder_point, i.closing_stock;
+    """, (latest_date, days_lookback, latest_date))
     rows = cursor.fetchall()
     conn.close()
 
@@ -44,7 +53,9 @@ def calculate_days_of_supply(days_lookback: int = 30) -> List[Dict[str, Any]]:
             "store_name": row["store_name"],
             "product_id": row["product_id"],
             "product_name": row["product_name"],
+            "category": row["category"],
             "stock_on_hand": stock,
+            "reorder_point": row["reorder_point"],
             "daily_velocity": daily_velocity,
             "days_of_supply": days_of_supply
         })
