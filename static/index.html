@@ -869,6 +869,17 @@
           </div>
         </div>
 
+        <!-- 6. POLICY EVIDENCE (Retrieved Knowledge-Base Documents) -->
+        <details class="evidence-details" id="policy-evidence-section" style="display: none; margin-top: 14px; border: 1px solid #bae6fd; border-left: 4px solid #0284c7; border-radius: 10px; padding: 12px 16px; background: #f0f9ff;">
+          <summary style="font-size: 0.85rem; font-weight: 800; color: #075985; cursor: pointer;">📄 Policy Evidence (Retrieved Knowledge-Base Documents)</summary>
+          <div id="policy-evidence-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;"></div>
+        </details>
+
+        <!-- DOCUMENT RETRIEVAL UNAVAILABLE MUTED NOTICE -->
+        <div id="retrieval-unavailable-note" style="display: none; font-size: 0.8rem; color: #94a3b8; margin-top: 12px; line-height: 1.5;">
+          ⚠️ Document retrieval is unavailable — policy/procedure answers from the knowledge base are not available right now. Database analytics remain fully functional.
+        </div>
+
         <!-- INTERACTIVE EVIDENCE INSPECTOR MODAL / EXPANDER -->
         <div id="evidence-inspector" class="evidence-inspector" style="display: none;">
           <div class="inspector-header">
@@ -1292,6 +1303,11 @@
 
     let currentEvidencePackage = null;
 
+    function isPolicyStyleQuestion(q) {
+      const t = (q || '').toLowerCase();
+      return /polic|procedur|rule|criteria|approval|approve|transfer|return|damaged|safety stock buffer|manual|guideline|sla|workflow/.test(t);
+    }
+
     function toggleEvidenceInspector() {
       const inspector = document.getElementById('evidence-inspector');
       if (inspector.style.display === 'none' || inspector.style.display === '') {
@@ -1477,6 +1493,40 @@
           assumpWrap.style.display = 'block';
         } else {
           assumpWrap.style.display = 'none';
+        }
+
+        // 7. POLICY EVIDENCE (retrieved knowledge-base documents)
+        const policyEvidence = data.policy_evidence || [];
+        const policySection = document.getElementById('policy-evidence-section');
+        const policyList = document.getElementById('policy-evidence-list');
+        if (policyEvidence.length > 0) {
+          policyList.innerHTML = '';
+          policyEvidence.forEach(p => {
+            const item = document.createElement('div');
+            item.style.cssText = 'border: 1px solid #bae6fd; border-radius: 8px; padding: 10px 12px; background: #ffffff;';
+            const meta = document.createElement('div');
+            meta.style.cssText = 'font-size: 0.78rem; font-weight: 700; color: #075985; margin-bottom: 4px;';
+            const scoreTxt = (p.score !== undefined && p.score !== null) ? ' · score ' + p.score : '';
+            meta.textContent = (p.document_name || 'document') + '#' + (p.chunk_id || '?') + (p.section ? ' (' + p.section + ')' : '') + scoreTxt;
+            const body = document.createElement('div');
+            body.style.cssText = 'font-size: 0.82rem; color: #334155; line-height: 1.5;';
+            const excerpt = (p.text || '').length > 300 ? (p.text || '').slice(0, 300) + '…' : (p.text || '');
+            body.textContent = excerpt;
+            item.appendChild(meta);
+            item.appendChild(body);
+            policyList.appendChild(item);
+          });
+          policySection.style.display = 'block';
+        } else {
+          policySection.style.display = 'none';
+        }
+
+        // 8. Muted notice when a policy-style question was asked but retrieval is unavailable
+        const retrievalNote = document.getElementById('retrieval-unavailable-note');
+        if (data.document_retrieval_available === false && isPolicyStyleQuestion(question)) {
+          retrievalNote.style.display = 'block';
+        } else {
+          retrievalNote.style.display = 'none';
         }
 
         // Populate Evidence Inspector Details

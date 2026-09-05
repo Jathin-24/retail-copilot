@@ -11,6 +11,7 @@ Validates:
 8. REST endpoints /api/copilot/chat, /api/copilot/query, /api/copilot/status work as specified.
 """
 import os
+import types
 import unittest
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
@@ -28,6 +29,7 @@ from src.copilot import (
     synthesize_deterministic_response,
     ask_copilot
 )
+from src import copilot as copilot_module
 
 
 class TestCopilotPipeline(unittest.TestCase):
@@ -246,14 +248,89 @@ class TestCopilotPipeline(unittest.TestCase):
             self.assertIn("stockout risk", resp.answer)
             self.assertIn("fallback", resp.confidence_note.lower())
 
+    def test_policy_question_with_retrieval_unavailable(self):
+        """
+        When document retrieval is unavailable, a policy/procedure question must:
+        - not crash
+        - report document_retrieval_available: False
+        - include the unavailability note in the answer
+        - still answer (or refuse deterministically) from database analytics only
+        """
+        mock_retrieval = MagicMock()
+        mock_retrieval.retrieval_status.return_value = {
+            "available": False,
+            "model": "gemini-embedding-001",
+            "documents_indexed": 0,
+            "chunks_count": 0,
+            "reason": "No document index exists yet.",
+        }
+        mock_retrieval.retrieve_documents.return_value = []
+
+        with patch.object(copilot_module, "_retrieve_module", return_value=mock_retrieval):
+            resp = self.copilot.ask("What is the replenishment policy for emergency orders?")
+
+        self.assertIsInstance(resp, CopilotResponse)
+        self.assertFalse(resp.document_retrieval_available)
+        self.assertIn("Document retrieval is unavailable", resp.answer)
+        self.assertEqual(resp.policy_evidence, [])
+        self.assertIn("Document retrieval is unavailable", resp.model_dump()["answer"])
+
+    def test_policy_question_with_retrieval_chunks_adds_policy_evidence(self):
+        """
+        When retrieve_documents returns chunks, the response must expose them as
+        a clearly-labelled policy_evidence section (top-level + evidence package),
+        append a POLICY EVIDENCE block to the answer with document_name + chunk_id,
+        and keep DATA evidence intact.
+        """
+        mock_retrieval = MagicMock()
+        mock_retrieval.retrieval_status.return_value = {
+            "available": True,
+            "model": "gemini-embedding-001",
+            "documents_indexed": 2,
+            "chunks_count": 6,
+            "reason": "ok",
+        }
+        chunk = types.SimpleNamespace(
+            document_name="inventory_policy.md",
+            chunk_id="inventory_policy.md#3",
+            section="Damage & Shrinkage",
+            text="Damaged goods are quarantined, photographed, and written off only after store manager approval.",
+            score=0.81,
+        )
+        mock_retrieval.retrieve_documents.return_value = [chunk]
+
+        with patch.object(copilot_module, "_retrieve_module", return_value=mock_retrieval):
+            resp = self.copilot.ask("What is the inventory policy on damaged goods?")
+
+        self.assertIsInstance(resp, CopilotResponse)
+        self.assertTrue(resp.document_retrieval_available)
+        self.assertEqual(len(resp.policy_evidence), 1)
+        self.assertEqual(resp.policy_evidence[0]["document_name"], "inventory_policy.md")
+        self.assertEqual(resp.policy_evidence[0]["chunk_id"], "inventory_policy.md#3")
+        self.assertEqual(resp.policy_evidence[0]["section"], "Damage & Shrinkage")
+        self.assertEqual(resp.policy_evidence[0]["score"], 0.81)
+        # POLICY EVIDENCE block must be visible in the answer with doc#chunk citation
+        self.assertIn("POLICY EVIDENCE:", resp.answer)
+        self.assertIn("inventory_policy.md#3", resp.answer)
+        # Clearly-labelled section inside the evidence package
+        self.assertIn("policy_evidence", resp.evidence)
+        self.assertEqual(resp.evidence["policy_evidence"][0]["chunk_id"], "inventory_policy.md#3")
+        # DATA evidence keys remain intact
+        self.assertTrue(resp.data_sufficient)
+
     def test_fastapi_copilot_status_endpoint(self):
         resp = self.client.get("/api/copilot/status")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertIn("gemini_api_key_configured", data)
         self.assertEqual(data["sdk"], "google-genai")
-        self.assertEqual(data["model"], "gemini-2.5-flash")
+        self.assertEqual(data["model"], os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"))
         self.assertIn("source_of_truth", data)
+        # Document-retrieval availability block must be present and guarded
+        self.assertIn("document_retrieval", data)
+        dr = data["document_retrieval"]
+        for key in ("available", "model", "documents_indexed", "chunks_count", "reason"):
+            self.assertIn(key, dr)
 
     def test_fastapi_copilot_chat_endpoint(self):
         payload = {"question": "What is running out?"}

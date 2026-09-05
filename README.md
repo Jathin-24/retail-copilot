@@ -61,7 +61,21 @@ Every claim is traceable to `source`, `period`, `calculation`, and `raw_values` 
 Copilot answers expose `evidence`, `key_findings`, `limitations`, and `confidence_note`. It never fabricates IDs, numbers, or store/product names.
 
 ## Local retrieval
-`src/retrieval/search.py` provides local SQL-based catalog search (product name/category) with no external services. All data lives in the repository; nothing goes over the network except optional Gemini calls.
+Local catalog lookup (product name/SKU → catalog records) happens against the local SQLite data during entity resolution in `src/copilot.py` — all data lives in the repository, with no external services. Nothing goes over the network except optional Gemini calls. (The old unused `src/retrieval/` package was deleted and replaced by the single `src/retrieval.py` module in the next section.)
+
+## Local document retrieval (policy knowledge base)
+`src/retrieval.py` (replaces the old, unused `src/retrieval/` package) answers policy/procedure questions from the committed business documents in `data/documents/` (`inventory_policy.md`, `replenishment_policy.md`, `store_operations.md`). It slices each document into ~300–400-word chunks at markdown headings, embeds each chunk with Google's **`gemini-embedding-001`**, and stores the float32 vectors as BLOBs plus source text/meta in the `document_chunks` + `document_index_meta` tables inside `data/retail.db`. At query time it returns the top-k most similar chunks by cosine similarity.
+
+- **Only-external-API rule**: Gemini is the only external service. Everything else — documents, chunks, embeddings, and the engine — lives locally in the repository. There is no Pinecone/Weaviate/Qdrant/hosted Chroma, no external vector DB, and no RAG over hosted stores.
+- **Local-only storage**: documents stay in `data/documents/`; chunk text + embeddings live in `data/retail.db` (`document_chunks`, `document_index_meta`). Nothing is sent over the network except the embedding request to Gemini.
+- **Precomputed + committed index**: the index is already built and committed in `data/retail.db` — currently **3 documents / 20 chunks**, model `gemini-embedding-001`, built 2026-09-05. Rebuild/refresh with `python -m src.retrieval` (the CLI loads `.env`, then `.env.local`), or `build_document_index(force=True)` from Python.
+- **Graceful degradation**: with no `GEMINI_API_KEY` or a failed embed, the app still starts and the dashboard works; policy answers carry a clear "Document retrieval is unavailable…" note. Retrieval never crashes the app.
+- **When documents are consulted**: policy/procedure questions — explicit keywords such as policy/procedure/rule/approval/transfer/guideline/SLA — **OR** a strong cosine match **≥ 0.55** are answered from the knowledge base as **POLICY EVIDENCE**.
+- **DATA EVIDENCE vs POLICY EVIDENCE**: sales/inventory/revenue/profit/stockout/forecasting/anomaly numbers always come from SQL/Python analytics (DATA EVIDENCE) — embeddings are never a substitute for database analytics. Document chunks (POLICY EVIDENCE) are used only for policies, procedures, and operational definitions. Each citation reports `document_name` + `chunk_id` + `section` (e.g. `replenishment_policy.md#1` → "Replenishment Policy > …"), so the two evidence types stay cleanly separated.
+
+Public API: `retrieve_documents(query, top_k=5) -> list[RetrievedChunk]`, `retrieval_status() -> dict`, and `build_document_index(force=False) -> dict`.
+
+**Chat model note**: chat reasoning reads the model from `GEMINI_MODEL`, defaulting to `gemini-3.6-flash` (the older on-key default `gemini-2.5-flash` is deprecated/404 on current accounts). Embeddings use `gemini-embedding-001` regardless of `GEMINI_MODEL`.
 
 ## Key features
 - **Attention Today dashboard** (`GET /api/attention`): ranks alerts by

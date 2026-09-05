@@ -71,6 +71,170 @@ DATABASE_MIN_DATE = "2024-06-01"
 DATABASE_MAX_DATE = "2024-08-29"
 
 
+# =========================================================================
+# DOCUMENT RETRIEVAL (POLICY / PROCEDURE KNOWLEDGE BASE)
+# =========================================================================
+
+# Lightweight keyword heuristic used to detect DOCUMENT/POLICY-oriented questions.
+POLICY_KEYWORD_PATTERNS = [
+    r"\bpolic",
+    r"\bprocedur",
+    r"\brule",
+    r"\bcriteria",
+    r"\bapprov",
+    r"\btransfer",
+    r"\breturn",
+    r"\bdamaged\b",
+    r"\bsafety stock buffer\b",
+    r"\bmanual",
+    r"\bguideline",
+    r"\bsla\b",
+    r"\bworkflow",
+]
+
+# Minimum cosine similarity for a retrieved document chunk to hijack the normal
+# analytics flow for a NON-keyword question. Explicit policy keywords always win.
+POLICY_MIN_SIMILARITY = 0.55
+
+
+def _has_policy_keywords(question: str) -> bool:
+    """True when the question text matches explicit policy/procedure keywords."""
+    q = question.lower()
+    return any(re.search(pattern, q) for pattern in POLICY_KEYWORD_PATTERNS)
+
+UNAVAILABLE_RETRIEVAL_NOTE = (
+    "Document retrieval is unavailable \u2014 policy/procedure answers from the "
+    "knowledge base are not available right now. Database analytics remain fully functional."
+)
+
+_retrieval_module_cache: Optional[Any] = None
+_retrieval_module_attempted = False
+
+
+def is_policy_question(question: str, intent_data: Optional["IntentSchema"] = None) -> bool:
+    """
+    Detects whether a question is DOCUMENT/POLICY-oriented (policies, procedures, rules,
+    approvals, transfers, returns, damaged goods, SLAs, workflows, guidelines).
+    Uses the already-extracted intent OR a lightweight keyword heuristic.
+    """
+    q = question.lower()
+    if _has_policy_keywords(question):
+        return True
+    if intent_data is not None and intent_data.intent == "UNKNOWN":
+        return True
+    return False
+
+
+def _retrieve_module() -> Optional[Any]:
+    """
+    Lazily loads the local document-retrieval module (src/retrieval.py).
+    Mirrors the existing 'from google import genai' lazy-import style and NEVER raises.
+    The module file can be shadowed by the legacy src/retrieval/ package directory, so a
+    direct file-load fallback is used. Returns None when the module is unavailable.
+    """
+    global _retrieval_module_cache, _retrieval_module_attempted
+    if _retrieval_module_attempted:
+        return _retrieval_module_cache
+
+    _retrieval_module_attempted = True
+    module = None
+
+    try:
+        from src import retrieval
+        if hasattr(retrieval, "retrieve_documents") and hasattr(retrieval, "retrieval_status"):
+            module = retrieval
+    except Exception:
+        module = None
+
+    if module is None:
+        try:
+            import importlib.util
+            from pathlib import Path
+            module_path = Path(__file__).resolve().parent / "retrieval.py"
+            if module_path.exists():
+                spec = importlib.util.spec_from_file_location("_retail_document_retrieval", str(module_path))
+                loaded = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(loaded)
+                if hasattr(loaded, "retrieve_documents") and hasattr(loaded, "retrieval_status"):
+                    module = loaded
+        except Exception:
+            module = None
+
+    _retrieval_module_cache = module
+    return module
+
+
+def retrieval_status_safe() -> Dict[str, Any]:
+    """Best-effort document-retrieval status. Never raises."""
+    try:
+        module = _retrieve_module()
+        if module is None:
+            return {
+                "available": False,
+                "model": None,
+                "documents_indexed": 0,
+                "chunks_count": 0,
+                "reason": "Document retrieval module is not available.",
+            }
+        status = module.retrieval_status()
+        if not isinstance(status, dict):
+            status = {}
+        return {
+            "available": bool(status.get("available")),
+            "model": status.get("model"),
+            "documents_indexed": status.get("documents_indexed") or 0,
+            "chunks_count": status.get("chunks_count") or 0,
+            "reason": status.get("reason") or ("available" if status.get("available") else "unavailable"),
+        }
+    except Exception:
+        return {
+            "available": False,
+            "model": None,
+            "documents_indexed": 0,
+            "chunks_count": 0,
+            "reason": "Document retrieval status unavailable.",
+        }
+
+
+def _chunks_to_dicts(chunks: Any) -> List[Dict[str, Any]]:
+    """Converts RetrievedChunk objects to plain dicts. Never raises."""
+    out: List[Dict[str, Any]] = []
+    for c in chunks or []:
+        try:
+            out.append({
+                "document_name": getattr(c, "document_name", None),
+                "chunk_id": getattr(c, "chunk_id", None),
+                "section": getattr(c, "section", None),
+                "text": getattr(c, "text", None),
+                "score": getattr(c, "score", None),
+            })
+        except Exception:
+            continue
+    return out
+
+
+def _build_policy_evidence_block(chunks: List[Dict[str, Any]]) -> str:
+    """
+    Builds the POLICY EVIDENCE citation block appended to chat answers so the
+    final answer clearly distinguishes DATA EVIDENCE from POLICY EVIDENCE.
+    """
+    lines = ["POLICY EVIDENCE: grounded in knowledge-base documents, not database analytics."]
+    for c in chunks:
+        doc = c.get("document_name") or "unknown_document"
+        chunk_id = c.get("chunk_id") or "?"
+        section = c.get("section") or ""
+        score = c.get("score")
+        if isinstance(score, (int, float)):
+            score_str = f"{float(score):.2f}"
+        else:
+            score_str = str(score) if score is not None else ""
+        tag = f"{chunk_id} ('{section}', {score_str})" if section else f"{chunk_id} ({score_str})"
+        text = (c.get("text") or "").replace("\n", " ").strip()
+        excerpt = text[:160] + ("..." if len(text) > 160 else "")
+        lines.append(f"- {tag} \u2014 {excerpt}")
+    return "\n".join(lines)
+
+
 class IntentSchema(BaseModel):
     """Structured Intent extracted from user question."""
     intent: str = Field(..., description="One of the supported retail analytical intents.")
@@ -109,6 +273,11 @@ class CopilotResponse(BaseModel):
     data_sufficient: bool = Field(True, description="False if data does not contain necessary entity or records.")
     refusal_reason: Optional[str] = Field(None, description="Explicit refusal reason if query is refused or qualified.")
     confidence_note: str = Field("", description="Explanation of basis of confidence and data source.")
+    document_retrieval_available: bool = Field(False, description="True when the local knowledge-base document retrieval service is available.")
+    policy_evidence: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="POLICY EVIDENCE: retrieved policy/procedure document chunks (document_name, chunk_id, section, text, score)."
+    )
 
 
 # =========================================================================
@@ -322,12 +491,15 @@ def rule_based_extract_intent(question: str) -> IntentSchema:
     elif "str-004" in q:
         store_candidate = "STR-004"
     else:
-        # Check for store in "at <store>" or "in <store>"
-        store_match = re.search(r"\b(?:at|in|for store|for)\s+([A-Za-z0-9\-\s]{3,20})\b", question, re.IGNORECASE)
-        if store_match:
-            cand = store_match.group(1).strip()
-            if cand.lower() not in ["july", "august", "today", "yesterday", "stock", "sales", "all", "stores", "products", "risk"]:
-                store_candidate = cand
+        # Policy/document questions must not be misread as store mentions
+        # (e.g. "for emergency orders" should never become a store name).
+        if not is_policy_question(question):
+            # Check for store in "at <store>" or "in <store>"
+            store_match = re.search(r"\b(?:at|in|for store|for)\s+([A-Za-z0-9\-\s]{3,20})\b", question, re.IGNORECASE)
+            if store_match:
+                cand = store_match.group(1).strip()
+                if cand.lower() not in ["july", "august", "today", "yesterday", "stock", "sales", "all", "stores", "products", "risk"]:
+                    store_candidate = cand
 
     # Detect product mentions
     product_candidate = None
@@ -1383,9 +1555,9 @@ class RetailCopilot:
     - Strict refusal rules for missing entities, insufficient dates, and unestablished causality.
     """
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-2.5-flash"):
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
-        self.model_name = model
+        self.model_name = model or os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
         self._client = None
 
     def _get_client(self):
@@ -1468,11 +1640,14 @@ class RetailCopilot:
         evidence: Dict[str, Any],
         resolved_product: Optional[Dict[str, Any]],
         resolved_store: Optional[Dict[str, Any]],
-        refusal_reason: Optional[str] = None
+        refusal_reason: Optional[str] = None,
+        policy_chunks: Optional[List[Dict[str, Any]]] = None
     ) -> Optional[CopilotResponse]:
         """
         Requests Gemini to produce a grounded natural-language explanation strictly over the Python evidence package.
         Enforces 5-tier distinction and refusal rules.
+        When policy documents were retrieved, they are injected as POLICY EVIDENCE reference context
+        and Gemini is instructed to label claims as DATA EVIDENCE vs POLICY EVIDENCE.
         """
         client = self._get_client()
         if not client:
@@ -1483,6 +1658,22 @@ class RetailCopilot:
 
             store_context = f"{resolved_store['store_name']} ({resolved_store['city']})" if resolved_store else "All Stores"
             product_context = f"{resolved_product['sku']} - {resolved_product['product_name']}" if resolved_product else "Not restricted to specific product"
+
+            policy_context = ""
+            if policy_chunks:
+                chunk_lines = []
+                for idx, c in enumerate(policy_chunks, 1):
+                    doc = c.get("document_name") or "unknown_document"
+                    chunk_id = c.get("chunk_id") or "?"
+                    section = c.get("section") or ""
+                    score = c.get("score")
+                    score_str = f"{float(score):.2f}" if isinstance(score, (int, float)) else str(score or "")
+                    tag = f"{chunk_id} ('{section}', {score_str})" if section else f"{chunk_id} ({score_str})"
+                    chunk_lines.append(f"{idx}. [{tag}] \u2014 {c.get('text')}")
+                policy_context = (
+                    "RETRIEVED POLICY DOCUMENT EVIDENCE (KNOWLEDGE BASE):\n"
+                    + "\n".join(chunk_lines)
+                )
 
             prompt = (
                 "You are an expert Retail Analytics Copilot for store managers.\n\n"
@@ -1500,14 +1691,24 @@ class RetailCopilot:
                 "   - inferences: analytical deductions grounded in metrics\n"
                 "   - recommendations: policy-compliant actions subject to manager approval\n"
                 "   - assumptions: stated boundary assumptions\n"
-                "6. Do NOT use unsupported certainty.\n\n"
+                "6. Do NOT use unsupported certainty.\n"
+                "7. LABEL YOUR SOURCES: Label claims as 'DATA EVIDENCE' when they come from the "
+                "deterministic Python evidence package above, and 'POLICY EVIDENCE' when they come "
+                "from the retrieved knowledge-base documents. NEVER present a policy or procedure "
+                "statement as if it were derived from database analytics.\n"
+                "8. POLICY QUESTIONS: When the user asks about a policy, procedure, rule, approval, "
+                "transfer, return, damaged goods, guideline, SLA, or workflow, answer strictly from the "
+                "RETRIEVED POLICY DOCUMENT EVIDENCE below (if provided). If no relevant policy document "
+                "was retrieved, state that the knowledge base does not cover the specific policy rather "
+                "than inventing one. Database analytics must not be cited as the source for policy text.\n\n"
                 f"USER QUESTION: \"{question}\"\n"
                 f"DETECTED INTENT: {intent_data.intent}\n"
                 f"IS CAUSAL INQUIRY: {intent_data.is_causal_inquiry}\n"
                 f"STORE CONTEXT: {store_context}\n"
                 f"PRODUCT CONTEXT: {product_context}\n"
-                f"EVIDENCE PACKAGE FROM PYTHON (SOURCE OF TRUTH):\n"
+                f"EVIDENCE PACKAGE FROM PYTHON (SOURCE OF TRUTH - DATA EVIDENCE):\n"
                 f"{json.dumps(evidence, indent=2)}\n\n"
+                f"{policy_context}\n\n"
                 "Produce a structured JSON response matching the schema."
             )
 
@@ -1537,15 +1738,162 @@ class RetailCopilot:
 
     def ask(self, question: str) -> CopilotResponse:
         """
-        Executes the full copilot pipeline with strict refusal checks:
+        Executes the full copilot pipeline with strict refusal checks and document-retrieval
+        integration for POLICY/PROCEDURE questions:
+
         USER QUESTION
         → date validity check
         → intent extraction
         → entity resolution
         → deterministic analytics & evidence package
         → Gemini explanation
+        → document (policy) evidence grounding
         → structured response
         """
+        # Detect policy-oriented questions up-front (keyword heuristic; intent is refined in _ask_core).
+        policy_query = is_policy_question(question)
+        policy_chunks: List[Dict[str, Any]] = []
+        retrieval_available = False
+        if policy_query:
+            policy_chunks, retrieval_available = self._gather_policy_evidence(question)
+
+        response = self._ask_core(
+            question,
+            policy_query=policy_query,
+            policy_chunks=policy_chunks,
+            retrieval_available=retrieval_available
+        )
+        return self._finalize_policy_response(
+            response,
+            question=question,
+            policy_query=policy_query,
+            policy_chunks=policy_chunks,
+            retrieval_available=retrieval_available
+        )
+
+    def _build_policy_answer_response(
+        self,
+        question: str,
+        intent_data: "IntentSchema",
+        policy_chunks: List[Dict[str, Any]]
+    ) -> "CopilotResponse":
+        """
+        Deterministic, citation-only policy answer built from the retrieved knowledge base.
+        Never consults database entities (a phantom store/product must not block a policy answer).
+        """
+        top = policy_chunks[0]
+        citation = f"{top['chunk_id']} ('{top['section'] or 'General'}', score {top['score']:.2f})"
+        answer = (
+            "Answered from the retailer policy knowledge base.\n\n"
+            f"Per {citation}:\n{top['text'].strip()}"
+        )
+        if len(policy_chunks) > 1:
+            answer += (
+                f"\n\n{len(policy_chunks) - 1} additional matching section(s) "
+                "are cited in POLICY EVIDENCE below."
+            )
+        evidence = {"policy_evidence": [dict(c) for c in policy_chunks]}
+        return CopilotResponse(
+            intent="POLICY_DOCUMENT",
+            product=None,
+            store=None,
+            time_period=intent_data.time_period,
+            answer=answer,
+            observed_facts=[],
+            calculated_metrics=[],
+            inferences=[f"Knowledge-base match: {citation}."],
+            recommendations=[
+                "Policy claims are grounded in POLICY EVIDENCE; database analytics were not used for this answer."
+            ],
+            assumptions=[
+                "Policy documents indexed in data/documents are authoritative operational references."
+            ],
+            evidence=evidence,
+            evidence_package=None,
+            key_findings=[f"Retrieved {len(policy_chunks)} document section(s) related to the question."],
+            data_sufficient=True,
+            refusal_reason=None,
+            recommendation="Follow the cited policy; escalate manager-approval steps per the document.",
+            limitations=["POLICY EVIDENCE is local document content, not database analytics."],
+            confidence_note="Deterministic document retrieval result."
+        )
+
+    def _gather_policy_evidence(
+        self,
+        question: str,
+        top_k: int = 5
+    ) -> Tuple[List[Dict[str, Any]], bool]:
+        """
+        BEST-EFFORT document retrieval for POLICY/PROCEDURE questions.
+        Returns (policy_chunks, retrieval_available). NEVER raises.
+        """
+        try:
+            module = _retrieve_module()
+            if module is None:
+                return [], False
+            status = module.retrieval_status()
+            available = bool(status and isinstance(status, dict) and status.get("available"))
+            chunks = _chunks_to_dicts(module.retrieve_documents(question, top_k=top_k))
+            return chunks, available
+        except Exception as e:
+            logger.warning(f"Document retrieval failed (treated as unavailable): {e}")
+            return [], False
+
+    def _finalize_policy_response(
+        self,
+        response: CopilotResponse,
+        question: str,
+        policy_query: bool,
+        policy_chunks: List[Dict[str, Any]],
+        retrieval_available: bool
+    ) -> CopilotResponse:
+        """
+        Attaches document-retrieval results to the assembled response:
+        - sets document_retrieval_available
+        - injects policy_evidence into the evidence package (clearly-labelled section)
+        - appends a POLICY EVIDENCE block to the answer when chunks were used
+        - appends an unavailability note when retrieval is unavailable for policy questions
+        """
+        response.document_retrieval_available = bool(retrieval_available)
+
+        if not policy_query:
+            return response
+
+        if policy_chunks:
+            chunks = [dict(c) for c in policy_chunks]
+            response.policy_evidence = chunks
+
+            if isinstance(response.evidence, dict):
+                response.evidence.setdefault("policy_evidence", list(chunks))
+            if isinstance(response.evidence_package, dict):
+                response.evidence_package.setdefault("policy_evidence", list(chunks))
+
+            if "POLICY EVIDENCE:" not in (response.answer or ""):
+                block = _build_policy_evidence_block(chunks)
+                response.answer = (response.answer or "").rstrip() + "\n\n" + block
+            if "policy claim" not in (response.confidence_note or "").lower():
+                response.confidence_note = (
+                    (response.confidence_note + " ").strip() + "Policy claims grounded in retrieved "
+                    "knowledge-base documents (POLICY EVIDENCE), not database analytics."
+                )
+        else:
+            note = UNAVAILABLE_RETRIEVAL_NOTE if not retrieval_available else (
+                "Document retrieval is available, but no knowledge-base section matched this "
+                "question strongly enough to cite."
+            )
+            if response.answer and note not in response.answer:
+                response.answer = response.answer.rstrip() + "\n\n" + note
+
+        return response
+
+    def _ask_core(
+        self,
+        question: str,
+        policy_query: bool = False,
+        policy_chunks: Optional[List[Dict[str, Any]]] = None,
+        retrieval_available: bool = False
+    ) -> CopilotResponse:
+        """Internal pipeline (see ask for the full flow description)."""
         # 1. Date Range Validity Check (Strict Refusal Rule)
         is_date_valid, requested_date, date_err = check_date_range_validity(question)
         if not is_date_valid:
@@ -1575,6 +1923,18 @@ class RetailCopilot:
         # Check if question is causal inquiry
         if is_causal_question(question):
             intent_data.is_causal_inquiry = True
+
+        # Refine policy detection using the extracted intent (UNKNOWN => document/policy oriented).
+        if not policy_query and intent_data.intent == "UNKNOWN" and not intent_data.is_causal_inquiry:
+            policy_query = True
+            policy_chunks, retrieval_available = self._gather_policy_evidence(question)
+
+        # Policy/procedure questions are answered from the knowledge base (POLICY EVIDENCE),
+        # never through database-entity refusals (phantom stores/products must not block policy answers).
+        if policy_query and policy_chunks:
+            top_score = float(policy_chunks[0].get("score", 0.0))
+            if _has_policy_keywords(question) or top_score >= POLICY_MIN_SIMILARITY:
+                return self._build_policy_answer_response(question, intent_data, policy_chunks)
 
         # 3. Entity Resolution against local SQLite database
         resolved_product, resolved_store, product_not_found, store_not_found = resolve_entities(
@@ -1669,7 +2029,8 @@ class RetailCopilot:
                 evidence=evidence,
                 resolved_product=resolved_product,
                 resolved_store=resolved_store,
-                refusal_reason=refusal_reason
+                refusal_reason=refusal_reason,
+                policy_chunks=policy_chunks
             )
 
         if gemini_response:
@@ -1733,5 +2094,7 @@ __all__ = [
     "rule_based_extract_intent",
     "execute_deterministic_analytics",
     "get_copilot",
-    "ask_copilot"
+    "ask_copilot",
+    "is_policy_question",
+    "retrieval_status_safe"
 ]

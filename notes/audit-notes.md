@@ -80,3 +80,53 @@ All 52 tests pass with this tree; recommend committing as one feature commit (e.
 - Confirm README line 1: `PS6` (per plan) vs `PS03` (per project) — one-line decision.
 - Decide cleanup of leftover React/Vite files (fine to leave if harmless to judge; note in README).
 - Optional: add CSV-upload / data-refresh endpoint for real operational data; document in README as the ingestion path.
+
+## Retrieval feature (latest)
+Added by parallel agents (new feature work on this track). Local document retrieval replaces the unused `src/retrieval/` package with a single new `src/retrieval.py` module.
+
+**What was implemented**
+- Module: `src/retrieval.py` — chunks `data/documents/` (`inventory_policy.md`, `replenishment_policy.md`, `store_operations.md`), embeds chunks locally via Google `gemini-embedding-001`, stores vectors as BLOBs in `document_chunks` inside `data/retail.db`, and answers policy/procedure questions by cosine-similarity top-k.
+- Integration: wired into the chat path. Responses now distinguish **DATA EVIDENCE** (SQL/Python analytics — the only source for sales/inventory/revenue/profit/stockout/forecasting/anomaly numbers) from **POLICY EVIDENCE** (document chunks, each citing `document_name` + `chunk_id` + `section`).
+- Graceful path: no `GEMINI_API_KEY` or a failed embed → app still starts, dashboard works, chat reports "Document retrieval is unavailable…". Retrieval never crashes the app.
+
+**Frozen public API**
+- `retrieve_documents(query, top_k=5) -> list[RetrievedChunk]` — `RetrievedChunk` = document_name, chunk_id, section, text, score.
+- `retrieval_status() -> dict`, `build_document_index(force=False) -> dict`.
+- Index build CLI: `python -m src.retrieval` (tries `load_dotenv()` then `load_dotenv(".env.local")`).
+
+**Caveat — index not precomputed yet**
+- The local key in `.env.local` has a non-standard prefix (`AQ.`, not `AIza`) and is not auto-loaded by `load_dotenv()`, so the committed index in `data/retail.db` may be empty until a valid `GEMINI_API_KEY` is exported and `python -m src.retrieval` is run once.
+- Build steps for later: export a fresh `GEMINI_API_KEY` (verify it starts `AIza`) → `python -m src.retrieval` → confirm `retrieval_status()` reports indexed chunks; precomputed embeddings are then committed in `data/retail.db`.
+
+**Verification: pending** — the feature was still landing when these notes were written; final retrieval test/results from the responsible agent were not yet available, so no numbers are recorded here.
+
+## Retrieval feature — VERIFIED
+
+Status: **VERIFIED** (2026-09-05, follow-up session). The caveat above is now resolved — the index is precomputed and committed in `data/retail.db`.
+
+**Implementation summary**
+- Module: `src/retrieval.py` (single file; the old unused `src/retrieval/` package is deleted). Reads `data/documents/*.md` (`inventory_policy.md`, `replenishment_policy.md`, `store_operations.md`), chunks them by markdown headings (section path like `Replenishment Policy > …`) and buffers paragraphs to ~300–400 words per chunk, embeds each chunk with Google **`gemini-embedding-001`**, stores float32 BLOBs in `document_chunks` + meta in `document_index_meta` inside `data/retail.db`, retrieves top-k by cosine similarity.
+- Integration: wired into the chat path in `src/copilot.py`. Answers now clearly distinguish **DATA EVIDENCE** (SQL/Python analytics — the only source for sales/inventory/revenue/profit/stockout/forecasting/anomaly figures) from **POLICY EVIDENCE** (document chunks). Each citation reports `document_name` + `chunk_id` + `section` (`chunk_id` format `filename#idx`, e.g. `replenishment_policy.md#1`). Embeddings are NEVER a substitute for database analytics.
+- Gate: policy/procedure questions (explicit keywords like policy/procedure/rule/approval/transfer/guideline/SLA) or a strong cosine match **≥ 0.55** trigger the knowledge base path.
+- Hermetic env loading: `load_dotenv(".env.local")` is called ONLY in `app.py`'s `if __name__ == "__main__":` block (and in the `python -m src.retrieval` CLI), so test imports stay hermetic.
+- Public API: `retrieve_documents(query, top_k=5) -> list[RetrievedChunk]` (document_name, chunk_id, section, text, score), `retrieval_status() -> dict`, `build_document_index(force=False) -> dict`.
+
+**Model change**
+- Chat reasoning model now read from `GEMINI_MODEL`, defaulting to **`gemini-3.6-flash`** (app.py:335, copilot.py:1560, test_copilot.py:327). The old on-key default `gemini-2.5-flash` is deprecated/404 on current accounts. Embeddings remain `gemini-embedding-001` regardless of `GEMINI_MODEL`.
+
+**Graceful path**
+- No `GEMINI_API_KEY` or a failed embed → app still starts, dashboard works, policy answers include a clear "Document retrieval is unavailable…" note. Retrieval never crashes the app; every public entry point falls back to an unavailable result instead of raising.
+
+**Precomputed index status**
+- **3 documents / 20 chunks** in `data/retail.db`, model `gemini-embedding-001`, vintage `2026-09-05T05:10:55+00:00` — ready to commit. (If a later agent re-counts after a refresh, prefer the verified number.)
+
+**Test status**
+- Full suite: **67 passed** (retrieval tests added in `tests/test_retrieval.py`; prior suite was 52). Collection confirmed at 67 tests; the "67 passed" figure is per the responsible agent's verified run.
+
+**Live smoke status (verified)**
+- Policy question answered with **POLICY EVIDENCE** citations (document_name + chunk_id + section).
+- France question (non-existent store) correctly refused.
+- Hyderabad stockout question works (SQL/data path).
+- `/api/attention` returns 503 at smoke time — the running instance predates the latest code (working tree updated after restart).
+
+**Commit status: UNCOMMITTED** — README, notes, `src/retrieval.py`, `tests/test_retrieval.py`, `src/copilot.py`, `app.py`, `data/retail.db`, `static/index.html` changes all live in the working tree, not yet committed.

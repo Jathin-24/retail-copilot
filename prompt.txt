@@ -1,0 +1,124 @@
+Continue from the existing project.
+
+Now harden the application against the exact evaluation criteria.
+
+DO NOT add unrelated features.
+
+Evaluate the application against these requirements:
+
+python app.py starts the complete application.
+Application listens on port 8000.
+No second command is required.
+Frontend is served by Python.
+Python 3.11 compatible.
+requirements.txt is complete.
+GEMINI_API_KEY is read from the environment.
+No API key is stored in source code.
+Gemini is the only external API.
+No hosted vector database.
+No external RAG service.
+All sample data is local.
+Deterministic analytics are separate from Gemini.
+Answers contain actual numbers.
+Recommendations contain evidence.
+Assumptions are shown.
+Unsupported questions are refused rather than guessed.
+Gemini failures do not crash the application.
+Missing data is handled gracefully.
+Ambiguous questions are handled gracefully.
+The dashboard works even without Gemini.
+Application startup is fast.
+
+ADD TEST CASES FOR THESE SCENARIOS:
+
+CASE 1:
+"What products are likely to run out?"
+
+Expected:
+stockout results with actual numbers.
+
+CASE 2:
+"What products are overstocked?"
+
+Expected:
+inventory and days-of-inventory evidence.
+
+CASE 3:
+"How did SKU-001 perform this month?"
+
+Expected:
+sales, revenue, profit/margin and comparison.
+
+CASE 4:
+"What needs my attention today?"
+
+Expected:
+ranked attention list.
+
+CASE 5:
+"Why did sales fall?"
+
+Expected:
+only evidence-supported explanation.
+If causal evidence is unavailable, explicitly say so.
+
+CASE 6:
+"Tell me about product XYZ123456 that doesn't exist."
+
+Expected:
+clear not-found response.
+
+CASE 7:
+"What was our competitor's price?"
+
+Expected:
+refusal because competitor pricing is not in the dataset.
+
+CASE 8:
+"Why did customers stop buying this?"
+
+Expected:
+do not claim a customer reason without customer/market evidence.
+
+CASE 9:
+Data with zero sales and zero inventory.
+
+Expected:
+do not interpret this automatically as zero demand.
+
+CASE 10:
+Gemini API failure.
+
+Expected:
+application remains alive and deterministic dashboard continues working.
+
+CASE 11:
+Missing GEMINI_API_KEY.
+
+Expected:
+application starts and clearly reports that AI features are unavailable.
+
+CASE 12:
+Malformed query.
+
+Expected:
+friendly clarification instead of server error.
+
+Add:
+
+backend exception handling
+request validation
+logging
+timeouts for Gemini calls
+safe fallback behavior
+no stack traces shown to normal users
+
+Create a /api/health endpoint that reports application status.
+
+Create a /api/diagnostics endpoint suitable for local testing that does NOT expose secrets.
+
+Add a "Demo Mode" section or clearly deterministic sample data behavior so judges can reliably reproduce the intended scenarios.
+
+Do not add authentication or cloud deployment.
+
+Finally, review the entire codebase for unnecessary complexity and remove anything not needed for the requirements.

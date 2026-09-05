@@ -38,7 +38,7 @@ from src.analytics import (
 from fastapi import HTTPException, Query
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
-from src.copilot import ask_copilot, get_copilot
+from src.copilot import ask_copilot, get_copilot, retrieval_status_safe
 from src.recommendations import get_attention_today
 
 class CopilotChatRequest(BaseModel):
@@ -62,6 +62,12 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 def on_startup():
     """Ensure database schema is initialized on boot."""
     init_db()
+    # BEST-EFFORT warm-call for the document-retrieval knowledge base.
+    # Never blocks startup and never crashes even if the module is unavailable.
+    try:
+        retrieval_status_safe()
+    except Exception:
+        pass
 
 @app.get("/api/health")
 def health_check():
@@ -317,21 +323,30 @@ def get_copilot_query(question: str = Query(..., description="Retail analytics q
 @app.get("/api/copilot/status")
 def get_copilot_status():
     """
-    Returns runtime configuration and health of Gemini LLM integration.
+    Returns runtime configuration and health of Gemini LLM integration,
+    including the document-retrieval (knowledge base) availability block.
     """
     api_key = os.environ.get("GEMINI_API_KEY")
     is_configured = bool(api_key and len(api_key.strip()) > 0)
+    document_retrieval = retrieval_status_safe()
     return {
         "gemini_api_key_configured": is_configured,
         "sdk": "google-genai",
-        "model": "gemini-2.5-flash",
+        "model": os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"),
         "active_mode": "live_reasoning" if is_configured else "deterministic_fallback",
         "source_of_truth": "Local SQLite Database and Deterministic Python Analytics Engine",
         "status_message": (
             "Gemini live reasoning active via google-genai SDK."
             if is_configured else
             "GEMINI_API_KEY is not configured. Copilot is functioning in deterministic fallback mode using verified local calculations."
-        )
+        ),
+        "document_retrieval": {
+            "available": bool(document_retrieval.get("available")),
+            "model": document_retrieval.get("model"),
+            "documents_indexed": document_retrieval.get("documents_indexed") or 0,
+            "chunks_count": document_retrieval.get("chunks_count") or 0,
+            "reason": document_retrieval.get("reason"),
+        },
     }
 
 @app.get("/")
@@ -379,6 +394,9 @@ def get_target_port() -> int:
         return 3000
 
 if __name__ == "__main__":
+    # Load the local-only key file (gitignored) only when actually starting the server,
+    # never at module import, so test imports of `app` stay hermetic.
+    load_dotenv(".env.local")
     port = get_target_port()
     print(f"Starting Retail - Sales and Inventory Copilot on 0.0.0.0:{port}")
     uvicorn.run("app:app", host="0.0.0.0", port=port, log_level="info")
