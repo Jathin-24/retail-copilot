@@ -321,81 +321,382 @@
 
     .response-box {
       display: none;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 20px;
-      margin-top: 16px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 24px;
+      margin-top: 20px;
+      box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05);
     }
 
     .response-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
-      padding-bottom: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
       border-bottom: 1px solid #e2e8f0;
     }
 
-    .response-answer {
-      font-size: 0.95rem;
-      color: #1e293b;
-      white-space: pre-wrap;
-      margin-bottom: 16px;
-      line-height: 1.6;
+    /* Refusal & Qualification Banner */
+    .refusal-banner {
+      display: none;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      border-left: 5px solid #e11d48;
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
     }
 
-    .findings-title {
-      font-size: 0.85rem;
-      font-weight: 700;
+    .refusal-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #475569;
+      background: #e11d48;
+      color: #ffffff;
+      padding: 2px 8px;
+      border-radius: 4px;
       margin-bottom: 6px;
     }
 
-    .findings-list {
-      list-style-type: none;
-      margin-bottom: 14px;
+    .refusal-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #9f1239;
+      margin-bottom: 4px;
     }
 
-    .findings-list li {
+    .refusal-explanation {
+      font-size: 0.86rem;
+      color: #881337;
+      line-height: 1.5;
+    }
+
+    .response-answer {
+      font-size: 1.02rem;
+      color: #0f172a;
+      white-space: pre-wrap;
+      margin-bottom: 20px;
+      line-height: 1.65;
+      font-weight: 500;
+      padding: 14px 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* 5-Tier Epistemic Visual System */
+    .epistemic-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .tier-card {
+      border-radius: 10px;
+      padding: 16px 18px;
+      border: 1px solid #e2e8f0;
+      transition: box-shadow 0.2s;
+    }
+
+    .tier-card:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .tier-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .tier-badge {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .tier-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .tier-list {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .tier-list li {
       position: relative;
       padding-left: 18px;
       font-size: 0.88rem;
       color: #334155;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      line-height: 1.5;
     }
 
-    .findings-list li::before {
+    .tier-list li::before {
       content: "•";
       position: absolute;
       left: 6px;
-      color: #2563eb;
       font-weight: bold;
     }
 
-    .recommendation-callout {
-      background: #ecfdf5;
-      border-left: 4px solid #10b981;
-      padding: 12px 14px;
-      border-radius: 6px;
-      margin-bottom: 14px;
-      font-size: 0.88rem;
-      color: #065f46;
+    /* 1. Observed Fact (Blue) */
+    .tier-fact {
+      background: #eff6ff;
+      border-left: 4px solid #2563eb;
+      border-color: #bfdbfe;
+    }
+    .badge-fact {
+      background: #2563eb;
+      color: #ffffff;
+    }
+    .tier-fact .tier-list li::before {
+      color: #2563eb;
     }
 
-    .evidence-details {
-      margin-top: 12px;
+    /* 2. Calculated Metric (Purple) */
+    .tier-metric {
+      background: #f5f3ff;
+      border-left: 4px solid #7c3aed;
+      border-color: #ddd6fe;
+    }
+    .badge-metric {
+      background: #7c3aed;
+      color: #ffffff;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .metric-box {
+      background: #ffffff;
+      border: 1px solid #e9d5ff;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .metric-name {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6b21a8;
+      margin-bottom: 2px;
+    }
+    .metric-value-row {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #4c1d95;
+    }
+    .metric-unit {
       font-size: 0.8rem;
+      font-weight: 500;
+      color: #7c3aed;
+      margin-left: 4px;
+    }
+    .metric-formula {
+      font-size: 0.74rem;
+      font-family: monospace;
+      color: #64748b;
+      margin-top: 4px;
+      background: #faf5ff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px dashed #e9d5ff;
+      overflow-x: auto;
+    }
+
+    /* 3. Inference (Amber) */
+    .tier-inference {
+      background: #fffbeb;
+      border-left: 4px solid #d97706;
+      border-color: #fde68a;
+    }
+    .badge-inference {
+      background: #d97706;
+      color: #ffffff;
+    }
+    .tier-inference .tier-list li::before {
+      color: #d97706;
+    }
+
+    /* 4. Recommendation (Green) */
+    .tier-rec {
+      background: #ecfdf5;
+      border-left: 4px solid #059669;
+      border-color: #a7f3d0;
+    }
+    .badge-rec {
+      background: #059669;
+      color: #ffffff;
+    }
+    .rec-body {
+      font-size: 0.92rem;
+      color: #065f46;
+      line-height: 1.55;
+      margin-bottom: 12px;
+    }
+    .rec-policy-note {
+      font-size: 0.78rem;
+      color: #047857;
+      font-style: italic;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .inspect-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ffffff;
+      border: 1px solid #10b981;
+      color: #065f46;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .inspect-btn:hover {
+      background: #059669;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.2);
+    }
+
+    /* 5. Assumption (Slate) */
+    .tier-assumption {
+      background: #f8fafc;
+      border-left: 4px solid #64748b;
+      border-color: #cbd5e1;
+    }
+    .badge-assumption {
+      background: #64748b;
+      color: #ffffff;
+    }
+    .tier-assumption .tier-list li::before {
       color: #64748b;
     }
 
-    .evidence-details summary {
+    /* Interactive Evidence Inspector Modal / Drawer */
+    .evidence-inspector {
+      background: #ffffff;
+      border: 2px solid #3b82f6;
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-top: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .inspector-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .inspector-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .inspector-close-btn {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
       cursor: pointer;
+      font-weight: 700;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      color: #475569;
+      transition: background 0.15s;
+    }
+    .inspector-close-btn:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .inspector-meta-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+      background: #f8fafc;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      font-size: 0.84rem;
+    }
+    .meta-item strong {
+      color: #475569;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .meta-item span {
+      color: #0f172a;
       font-weight: 600;
-      color: #2563eb;
-      user-select: none;
+    }
+    .inspector-section-title {
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #1e293b;
+      margin: 14px 0 6px 0;
+    }
+    .inspector-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      margin-bottom: 12px;
+    }
+    .inspector-table th {
+      background: #f1f5f9;
+      color: #334155;
+      text-align: left;
+      padding: 8px 10px;
+      font-weight: 700;
+      border: 1px solid #e2e8f0;
+    }
+    .inspector-table td {
+      padding: 8px 10px;
+      border: 1px solid #e2e8f0;
+      color: #1e293b;
+    }
+    .inspector-table tr:nth-child(even) td {
+      background: #fbfcfe;
+    }
+    .limitations-box {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: #92400e;
+      margin-bottom: 14px;
     }
 
     .evidence-pre {
@@ -412,7 +713,7 @@
     .footer-note {
       font-size: 0.75rem;
       color: #94a3b8;
-      margin-top: 12px;
+      margin-top: 14px;
       border-top: 1px dashed #e2e8f0;
       padding-top: 8px;
     }
@@ -464,11 +765,13 @@
 
       <div class="pill-container">
         <button class="prompt-pill" onclick="setQuery('What is running out?')">🔥 What is running out?</button>
+        <button class="prompt-pill" onclick="setQuery('Why did sales fall?')">❓ Why did sales fall? (Causal Refusal)</button>
+        <button class="prompt-pill" onclick="setQuery('What were sales in 2026?')">📅 Sales in 2026 (Out of Range)</button>
+        <button class="prompt-pill" onclick="setQuery('How did PlayStation 5 perform?')">🎮 PlayStation 5 (Unsupported)</button>
         <button class="prompt-pill" onclick="setQuery('Which stores are performing well?')">📊 Which stores are performing well?</button>
-        <button class="prompt-pill" onclick="setQuery('What is running out in Hyderabad?')">📍 What is running out in Hyderabad?</button>
-        <button class="prompt-pill" onclick="setQuery('What is overstocked across stores?')">📦 What is overstocked?</button>
+        <button class="prompt-pill" onclick="setQuery('What is running out in Hyderabad?')">📍 Running out in Hyderabad?</button>
+        <button class="prompt-pill" onclick="setQuery('What is overstocked across stores?')">📦 Overstocked items?</button>
         <button class="prompt-pill" onclick="setQuery('What products are slow moving?')">⏳ Show slow movers</button>
-        <button class="prompt-pill" onclick="setQuery('What sales anomalies occurred?')">⚡ Sales anomalies</button>
       </div>
 
       <div class="chat-input-row">
@@ -476,7 +779,7 @@
           type="text" 
           id="copilot-query-input" 
           class="chat-input" 
-          placeholder="Type your retail inquiry (e.g. 'What is running out in Hyderabad?')..." 
+          placeholder="Type your retail inquiry (e.g. 'Why did sales fall?' or 'What is running out?')..." 
           onkeydown="if (event.key === 'Enter') submitCopilotQuery()"
         />
         <button id="copilot-send-btn" class="chat-btn" onclick="submitCopilotQuery()">
@@ -489,21 +792,117 @@
           <span style="font-size: 0.82rem; font-weight: 700; color: #1e293b;" id="res-badge-intent">INTENT: -</span>
           <span style="font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 4px;" id="res-badge-sufficient"></span>
         </div>
+
+        <!-- STRICT REFUSAL & QUALIFICATION ALERT BANNER -->
+        <div id="res-refusal-banner" class="refusal-banner">
+          <span class="refusal-badge" id="refusal-badge-tag">STRICT REFUSAL</span>
+          <div class="refusal-title" id="refusal-title">Unestablished Causality / Missing External Data</div>
+          <div class="refusal-explanation" id="refusal-explanation">
+            Local database transaction records cannot establish the root cause without external competitor pricing, customer feedback, or marketing campaigns.
+          </div>
+        </div>
+
         <div class="response-answer" id="res-answer"></div>
-        
-        <div id="findings-wrapper" style="display: none;">
-          <div class="findings-title">Key Evidence Findings</div>
-          <ul class="findings-list" id="res-findings"></ul>
+
+        <!-- 5-TIER EPISTEMIC VISUAL SYSTEM -->
+        <div class="epistemic-container" id="epistemic-container">
+          <!-- 1. OBSERVED FACT (Blue) -->
+          <div class="tier-card tier-fact" id="tier-fact-wrap">
+            <div class="tier-header">
+              <span class="tier-badge badge-fact">OBSERVED FACT</span>
+              <span class="tier-desc">Directly recorded in database ledger (zero speculation)</span>
+            </div>
+            <ul class="tier-list" id="res-facts-list"></ul>
+          </div>
+
+          <!-- 2. CALCULATED METRIC (Purple) -->
+          <div class="tier-card tier-metric" id="tier-metric-wrap">
+            <div class="tier-header">
+              <span class="tier-badge badge-metric">CALCULATED METRIC</span>
+              <span class="tier-desc">Deterministic Python mathematical computations &amp; formulas</span>
+            </div>
+            <div class="metrics-grid" id="res-metrics-grid"></div>
+          </div>
+
+          <!-- 3. INFERENCE (Amber) -->
+          <div class="tier-card tier-inference" id="tier-inference-wrap">
+            <div class="tier-header">
+              <span class="tier-badge badge-inference">INFERENCE</span>
+              <span class="tier-desc">Analytical deductions grounded strictly in metrics</span>
+            </div>
+            <ul class="tier-list" id="res-inferences-list"></ul>
+          </div>
+
+          <!-- 4. RECOMMENDATION (Green) -->
+          <div class="tier-card tier-rec" id="tier-rec-wrap">
+            <div class="tier-header">
+              <span class="tier-badge badge-rec">RECOMMENDATION</span>
+              <span class="tier-desc">Actionable proposals • Requires Manager Confirmation</span>
+            </div>
+            <div class="rec-body" id="res-rec-content"></div>
+            <div class="rec-policy-note">
+              <span>⚠️ Action Policy:</span> Must be reviewed and approved by store manager prior to purchase order creation.
+            </div>
+            <button class="inspect-btn" onclick="toggleEvidenceInspector()">
+              🔍 Inspect Underlying Evidence Behind Recommendation
+            </button>
+          </div>
+
+          <!-- 5. ASSUMPTION (Slate) -->
+          <div class="tier-card tier-assumption" id="tier-assumption-wrap">
+            <div class="tier-header">
+              <span class="tier-badge badge-assumption">ASSUMPTION</span>
+              <span class="tier-desc">Operational assumptions, SLAs, and dataset boundaries</span>
+            </div>
+            <ul class="tier-list" id="res-assumptions-list"></ul>
+          </div>
         </div>
 
-        <div id="recommendation-wrapper" style="display: none;">
-          <div class="recommendation-callout" id="res-recommendation"></div>
-        </div>
+        <!-- INTERACTIVE EVIDENCE INSPECTOR MODAL / EXPANDER -->
+        <div id="evidence-inspector" class="evidence-inspector" style="display: none;">
+          <div class="inspector-header">
+            <div class="inspector-title">
+              <span>🔍 Recommendation Evidence Inspector</span>
+            </div>
+            <button class="inspector-close-btn" onclick="toggleEvidenceInspector()">✕ Close Inspector</button>
+          </div>
+          <div class="inspector-body">
+            <div class="inspector-meta-row">
+              <div class="meta-item">
+                <strong>Source Datasets / Tables:</strong>
+                <span id="insp-sources">inventory.csv + sales.csv</span>
+              </div>
+              <div class="meta-item">
+                <strong>Target Entity:</strong>
+                <span id="insp-entity">Product &amp; Store</span>
+              </div>
+              <div class="meta-item">
+                <strong>Date Period Evaluated:</strong>
+                <span id="insp-period">Historical Recording Window</span>
+              </div>
+            </div>
 
-        <details class="evidence-details">
-          <summary>View Deterministic Python Evidence Payload</summary>
-          <pre class="evidence-pre" id="res-evidence"></pre>
-        </details>
+            <div class="inspector-section-title">Raw Database Values Used in Calculation</div>
+            <table class="inspector-table" id="insp-raw-table">
+              <thead><tr><th>Parameter</th><th>Raw Value</th><th>Origin</th></tr></thead>
+              <tbody id="insp-raw-tbody"></tbody>
+            </table>
+
+            <div class="inspector-section-title">Deterministic Calculations &amp; Formulas</div>
+            <table class="inspector-table" id="insp-calc-table">
+              <thead><tr><th>Metric Name</th><th>Calculated Value</th><th>Formula / Method</th></tr></thead>
+              <tbody id="insp-calc-tbody"></tbody>
+            </table>
+
+            <div class="inspector-section-title">Data Quality Checks &amp; Missing External Context</div>
+            <div class="limitations-box" id="insp-limitations"></div>
+
+            <details class="evidence-details" style="margin-top: 14px;">
+              <summary>View Complete JSON Evidence Payload for Audit</summary>
+              <pre class="evidence-pre" id="res-evidence"></pre>
+            </details>
+          </div>
+        </div>
 
         <div class="footer-note" id="res-confidence"></div>
       </div>
@@ -716,6 +1115,18 @@
       submitCopilotQuery();
     }
 
+    let currentEvidencePackage = null;
+
+    function toggleEvidenceInspector() {
+      const inspector = document.getElementById('evidence-inspector');
+      if (inspector.style.display === 'none' || inspector.style.display === '') {
+        inspector.style.display = 'block';
+        inspector.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        inspector.style.display = 'none';
+      }
+    }
+
     async function submitCopilotQuery() {
       const input = document.getElementById('copilot-query-input');
       const question = input.value.trim();
@@ -726,19 +1137,33 @@
       const resAnswer = document.getElementById('res-answer');
       const resIntent = document.getElementById('res-badge-intent');
       const resSuff = document.getElementById('res-badge-sufficient');
-      const resFindings = document.getElementById('res-findings');
-      const findingsWrap = document.getElementById('findings-wrapper');
-      const resRec = document.getElementById('res-recommendation');
-      const recWrap = document.getElementById('recommendation-wrapper');
+      
+      const refusalBanner = document.getElementById('res-refusal-banner');
+      const refusalBadgeTag = document.getElementById('refusal-badge-tag');
+      const refusalTitle = document.getElementById('refusal-title');
+      const refusalExp = document.getElementById('refusal-explanation');
+
+      const factsWrap = document.getElementById('tier-fact-wrap');
+      const factsList = document.getElementById('res-facts-list');
+      const metricWrap = document.getElementById('tier-metric-wrap');
+      const metricsGrid = document.getElementById('res-metrics-grid');
+      const infWrap = document.getElementById('tier-inference-wrap');
+      const infList = document.getElementById('res-inferences-list');
+      const recWrap = document.getElementById('tier-rec-wrap');
+      const recContent = document.getElementById('res-rec-content');
+      const assumpWrap = document.getElementById('tier-assumption-wrap');
+      const assumpList = document.getElementById('res-assumptions-list');
+
       const resEvidence = document.getElementById('res-evidence');
       const resConfidence = document.getElementById('res-confidence');
+      const inspector = document.getElementById('evidence-inspector');
 
       btn.disabled = true;
       btn.textContent = 'Computing...';
       resBox.style.display = 'block';
-      resAnswer.textContent = 'Executing deterministic analytics over local database and generating grounded explanation...';
-      findingsWrap.style.display = 'none';
-      recWrap.style.display = 'none';
+      inspector.style.display = 'none';
+      refusalBanner.style.display = 'none';
+      resAnswer.textContent = 'Executing deterministic Python calculations and enforcing evidence grounding...';
       resConfidence.textContent = '';
       resEvidence.textContent = '';
 
@@ -751,42 +1176,140 @@
 
         if (!res.ok) throw new Error('Server returned HTTP ' + res.status);
         const data = await res.json();
+        currentEvidencePackage = data.evidence_package || data.evidence || {};
 
+        // Intent badge
+        resIntent.textContent = 'INTENT: ' + (data.intent || 'GENERAL_RETAIL_ANALYSIS');
+
+        // Main Grounded Answer
         resAnswer.textContent = data.answer || 'No answer generated.';
-        
-        // Sufficiency badge
-        if (data.data_sufficient) {
-          resSuff.textContent = 'Data Sufficient';
+
+        // Sufficiency Badge
+        if (data.data_sufficient && !data.refusal_reason) {
+          resSuff.textContent = '● Data Sufficient (Verified Ground Truth)';
           resSuff.style.background = '#dcfce7';
           resSuff.style.color = '#15803d';
         } else {
-          resSuff.textContent = 'Data Insufficient';
+          resSuff.textContent = data.refusal_reason ? '● Refused / Qualified (' + data.refusal_reason + ')' : '● Data Insufficient';
           resSuff.style.background = '#fee2e2';
           resSuff.style.color = '#b91c1c';
         }
 
-        // Findings
-        if (data.key_findings && data.key_findings.length > 0) {
-          resFindings.innerHTML = '';
-          data.key_findings.forEach(f => {
+        // 1. Refusal & Qualification Banner
+        if (data.refusal_reason) {
+          refusalBanner.style.display = 'block';
+          refusalBadgeTag.textContent = 'STRICT REFUSAL: ' + data.refusal_reason.replace(/_/g, ' ');
+          if (data.refusal_reason === 'UNESTABLISHED_CAUSALITY') {
+            refusalTitle.textContent = 'Refusal to Speculate: Correlation vs Causality';
+            refusalExp.textContent = 
+              'The system strictly refuses to claim why sales changed because the local database lacks external datasets. ' +
+              'Transaction and stock logs establish what happened, but cannot prove customer preferences, competitor maneuvers, or advertising efficacy.';
+          } else if (data.refusal_reason === 'INSUFFICIENT_DATE_RANGE') {
+            refusalTitle.textContent = 'Temporal Boundary Exceeded';
+            refusalExp.textContent = 'The query references dates outside our active recording bounds (June 1, 2024 to August 29, 2024). Speculation on unrecorded dates is prohibited.';
+          } else if (data.refusal_reason === 'UNSUPPORTED_PRODUCT') {
+            refusalTitle.textContent = 'Catalog Boundary: Product Not Indexed';
+            refusalExp.textContent = 'The requested product is not indexed in the verified catalog. Queries for non-existent items are strictly qualified.';
+          } else if (data.refusal_reason === 'NON_EXISTENT_STORE') {
+            refusalTitle.textContent = 'Network Boundary: Store Not Found';
+            refusalExp.textContent = 'The requested store is not part of the active physical store chain. Only verified stores are analyzed.';
+          } else {
+            refusalTitle.textContent = 'Analytical Refusal Rule Triggered';
+            refusalExp.textContent = 'Data is insufficient or required variables are missing from local records.';
+          }
+        } else {
+          refusalBanner.style.display = 'none';
+        }
+
+        // 2. OBSERVED FACTS (Blue)
+        const facts = data.observed_facts || [];
+        if (facts.length > 0) {
+          factsList.innerHTML = '';
+          facts.forEach(f => {
             const li = document.createElement('li');
             li.textContent = f;
-            resFindings.appendChild(li);
+            factsList.appendChild(li);
           });
-          findingsWrap.style.display = 'block';
+          factsWrap.style.display = 'block';
+        } else {
+          factsWrap.style.display = 'none';
         }
 
-        // Recommendation
-        if (data.recommendation) {
-          resRec.innerHTML = '<strong>Recommendation:</strong> ' + data.recommendation;
+        // 3. CALCULATED METRICS (Purple)
+        const metrics = data.calculated_metrics || (currentEvidencePackage.metrics || []);
+        if (metrics.length > 0) {
+          metricsGrid.innerHTML = '';
+          metrics.forEach(m => {
+            const box = document.createElement('div');
+            box.className = 'metric-box';
+            
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'metric-name';
+            nameDiv.textContent = (m.metric || 'metric').replace(/_/g, ' ');
+
+            const valDiv = document.createElement('div');
+            valDiv.className = 'metric-value-row';
+            valDiv.innerHTML = `${m.value !== undefined ? m.value : '-'} <span class="metric-unit">${m.unit || ''}</span>`;
+
+            const formDiv = document.createElement('div');
+            formDiv.className = 'metric-formula';
+            formDiv.textContent = m.calculation || (m.source ? 'Source: ' + m.source : 'Deterministic formula');
+
+            box.appendChild(nameDiv);
+            box.appendChild(valDiv);
+            box.appendChild(formDiv);
+            metricsGrid.appendChild(box);
+          });
+          metricWrap.style.display = 'block';
+        } else {
+          metricWrap.style.display = 'none';
+        }
+
+        // 4. INFERENCES (Amber)
+        const inferences = data.inferences || [];
+        if (inferences.length > 0) {
+          infList.innerHTML = '';
+          inferences.forEach(inf => {
+            const li = document.createElement('li');
+            li.textContent = inf;
+            infList.appendChild(li);
+          });
+          infWrap.style.display = 'block';
+        } else {
+          infWrap.style.display = 'none';
+        }
+
+        // 5. RECOMMENDATIONS (Green)
+        const recs = data.recommendations && data.recommendations.length > 0 
+          ? data.recommendations 
+          : (data.recommendation ? [data.recommendation] : []);
+        if (recs.length > 0) {
+          recContent.innerHTML = recs.map(r => `<div><strong>•</strong> ${r}</div>`).join('');
           recWrap.style.display = 'block';
+        } else {
+          recWrap.style.display = 'none';
         }
 
-        // Evidence JSON
-        resEvidence.textContent = JSON.stringify(data.evidence || {}, null, 2);
+        // 6. ASSUMPTIONS (Slate)
+        const assumptions = data.assumptions || [];
+        if (assumptions.length > 0) {
+          assumpList.innerHTML = '';
+          assumptions.forEach(a => {
+            const li = document.createElement('li');
+            li.textContent = a;
+            assumpList.appendChild(li);
+          });
+          assumpWrap.style.display = 'block';
+        } else {
+          assumpWrap.style.display = 'none';
+        }
 
-        // Confidence
-        resConfidence.textContent = data.confidence_note || 'Ground truth verified via Python analytics.';
+        // Populate Evidence Inspector Details
+        populateInspector(data);
+
+        // Raw Evidence JSON & Confidence Note
+        resEvidence.textContent = JSON.stringify(data.evidence || {}, null, 2);
+        resConfidence.textContent = data.confidence_note || 'Ground truth computed deterministically via Python analytics over local SQLite database.';
 
       } catch (err) {
         resAnswer.textContent = 'Error: ' + err.message;
@@ -796,6 +1319,89 @@
       } finally {
         btn.disabled = false;
         btn.textContent = 'Ask Copilot';
+      }
+    }
+
+    function populateInspector(data) {
+      const pkg = data.evidence_package || data.evidence || {};
+      
+      // Meta row
+      const sources = pkg.source_tables ? pkg.source_tables.join(', ') : (pkg.source || 'inventory.csv, sales.csv');
+      document.getElementById('insp-sources').textContent = sources;
+
+      const entity = [
+        pkg.sku || pkg.product_name || data.product || 'Network SKUs',
+        pkg.store_name || pkg.city || data.store || 'All Stores'
+      ].filter(Boolean).join(' • ');
+      document.getElementById('insp-entity').textContent = entity;
+
+      const period = pkg.date_range 
+        ? (pkg.date_range.start_date ? `${pkg.date_range.start_date} to ${pkg.date_range.end_date}` : JSON.stringify(pkg.date_range))
+        : (data.time_period || '2024-06-01 to 2024-08-29');
+      document.getElementById('insp-period').textContent = period;
+
+      // Raw values table
+      const rawTbody = document.getElementById('insp-raw-tbody');
+      rawTbody.innerHTML = '';
+      const rawValues = pkg.raw_values || {};
+      if (Object.keys(rawValues).length === 0) {
+        rawTbody.innerHTML = '<tr><td colspan="3" style="color: #94a3b8; font-style: italic;">No raw ledger variables recorded for this intent.</td></tr>';
+      } else {
+        for (const [key, val] of Object.entries(rawValues)) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><code>${key}</code></td>
+            <td><strong>${typeof val === 'object' ? JSON.stringify(val) : val}</strong></td>
+            <td><code>SQLite ledger / CSV</code></td>
+          `;
+          rawTbody.appendChild(tr);
+        }
+      }
+
+      // Calculations table
+      const calcTbody = document.getElementById('insp-calc-tbody');
+      calcTbody.innerHTML = '';
+      const calcValues = pkg.calculated_values || {};
+      const formulas = pkg.formulas || {};
+      if (Object.keys(calcValues).length === 0 && (!pkg.metrics || pkg.metrics.length === 0)) {
+        calcTbody.innerHTML = '<tr><td colspan="3" style="color: #94a3b8; font-style: italic;">No calculated metrics available.</td></tr>';
+      } else if (pkg.metrics && pkg.metrics.length > 0) {
+        pkg.metrics.forEach(m => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><code>${m.metric}</code></td>
+            <td><strong>${m.value} ${m.unit || ''}</strong></td>
+            <td><code>${m.calculation || formulas[m.metric] || 'Python analytic'}</code></td>
+          `;
+          calcTbody.appendChild(tr);
+        });
+      } else {
+        for (const [key, val] of Object.entries(calcValues)) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><code>${key}</code></td>
+            <td><strong>${val}</strong></td>
+            <td><code>${formulas[key] || 'Deterministic formula'}</code></td>
+          `;
+          calcTbody.appendChild(tr);
+        }
+      }
+
+      // Limitations & Warnings
+      const limitationsBox = document.getElementById('insp-limitations');
+      const warnings = pkg.data_quality_warnings || [];
+      const causalLimits = pkg.causal_limitations || data.limitations || [];
+      const allLimits = [...warnings, ...causalLimits];
+
+      if (allLimits.length === 0) {
+        limitationsBox.innerHTML = '<strong>Data Quality:</strong> Zero data anomalies or unmeasured variables detected.';
+      } else {
+        limitationsBox.innerHTML = `
+          <strong>Evidence Limitations &amp; Unmeasured Factors:</strong>
+          <ul style="margin: 6px 0 0 16px;">
+            ${allLimits.map(l => `<li>${l}</li>`).join('')}
+          </ul>
+        `;
       }
     }
 

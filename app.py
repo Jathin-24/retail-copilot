@@ -259,13 +259,19 @@ def post_copilot_chat(payload: CopilotChatRequest):
         return ask_copilot(payload.question)
     except Exception as e:
         return {
+            "intent": "UNKNOWN",
             "answer": f"A processing error occurred: {str(e)}",
+            "observed_facts": [],
+            "calculated_metrics": [],
+            "inferences": [],
+            "recommendations": ["Try asking a supported retail question such as 'What is running out?'"],
+            "assumptions": [],
             "key_findings": ["Encountered unexpected internal error."],
             "evidence": {"error": str(e)},
             "recommendation": "Try asking a supported retail question such as 'What is running out?'",
-            "assumptions": [],
             "limitations": [],
             "data_sufficient": False,
+            "refusal_reason": "PROCESSING_ERROR",
             "confidence_note": "Failed during copilot execution."
         }
 
@@ -278,13 +284,19 @@ def get_copilot_query(question: str = Query(..., description="Retail analytics q
         return ask_copilot(question)
     except Exception as e:
         return {
+            "intent": "UNKNOWN",
             "answer": f"A processing error occurred: {str(e)}",
+            "observed_facts": [],
+            "calculated_metrics": [],
+            "inferences": [],
+            "recommendations": ["Try asking a supported retail question such as 'What is running out?'"],
+            "assumptions": [],
             "key_findings": ["Encountered unexpected internal error."],
             "evidence": {"error": str(e)},
             "recommendation": None,
-            "assumptions": [],
             "limitations": [],
             "data_sufficient": False,
+            "refusal_reason": "PROCESSING_ERROR",
             "confidence_note": "Failed during copilot execution."
         }
 

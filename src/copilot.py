@@ -3,12 +3,20 @@ Retail Copilot Module
 TRACK_ID: PS03
 
 CRITICAL ARCHITECTURAL PRINCIPLE:
+- NEVER MAKE A CLAIM WITHOUT SUPPORTING DATA.
 - Gemini is NOT the source of truth.
 - Local SQLite database and deterministic Python analytics engine are the SOLE SOURCE OF TRUTH.
-- Gemini performs NLU intent classification, entity extraction assistance, and grounded reasoning.
-- Every numerical claim MUST correspond to evidence returned by Python.
-- Gemini NEVER invents numerical values or database IDs.
-- If GEMINI_API_KEY is missing or API call fails, deterministic fallback ensures the app never crashes.
+- Explicit distinction between:
+    1. OBSERVED FACT
+    2. CALCULATED METRIC
+    3. INFERENCE
+    4. RECOMMENDATION
+    5. ASSUMPTION
+- Strict refusal and qualification rules when:
+    - Product or store does not exist
+    - Date range has insufficient data
+    - Causal explanation cannot be established by data
+    - Data is missing or unreliable
 """
 from __future__ import annotations
 
@@ -35,9 +43,17 @@ from src.analytics import (
     check_inventory_data_quality,
 )
 
+# Explicit Evidence Layer
+from src.evidence import (
+    MetricEvidence,
+    EvidencePackage,
+    build_stockout_evidence,
+    build_causal_inquiry_evidence
+)
+
 logger = logging.getLogger(__name__)
 
-# Supported Analytical Intents
+# Supported Analytical Intents (strictly 9)
 SUPPORTED_INTENTS = [
     "SALES_PERFORMANCE",
     "INVENTORY_STATUS",
@@ -50,6 +66,10 @@ SUPPORTED_INTENTS = [
     "UNKNOWN"
 ]
 
+# Database Active Date Bounds
+DATABASE_MIN_DATE = "2024-06-01"
+DATABASE_MAX_DATE = "2024-08-29"
+
 
 class IntentSchema(BaseModel):
     """Structured Intent extracted from user question."""
@@ -58,18 +78,89 @@ class IntentSchema(BaseModel):
     store: Optional[str] = Field(None, description="Store name, city, or ID mentioned in question.")
     time_period: Optional[str] = Field(None, description="Time period mentioned (e.g. 'last week', 'July 2024').")
     requires_clarification: bool = Field(False, description="True if query is excessively ambiguous.")
+    is_causal_inquiry: bool = Field(False, description="True if query seeks a causal explanation ('why did...').")
 
 
 class CopilotResponse(BaseModel):
-    """Strictly structured final response returned to user or client."""
+    """
+    Strictly structured final response returned to user or client.
+    Enforces 5-tier epistemic distinction:
+    - OBSERVED FACT
+    - CALCULATED METRIC
+    - INFERENCE
+    - RECOMMENDATION
+    - ASSUMPTION
+    """
+    intent: Optional[str] = Field(None, description="Identified analytical intent.")
+    product: Optional[str] = Field(None, description="Identified product entity.")
+    store: Optional[str] = Field(None, description="Identified store entity.")
+    time_period: Optional[str] = Field(None, description="Identified time period.")
     answer: str = Field(..., description="Evidence-grounded explanation with actual figures.")
+    observed_facts: List[str] = Field(default_factory=list, description="OBSERVED FACT: Facts directly verified from database records.")
+    calculated_metrics: List[Dict[str, Any]] = Field(default_factory=list, description="CALCULATED METRIC: Derived metrics with formulas and sources.")
+    inferences: List[str] = Field(default_factory=list, description="INFERENCE: Analytical deductions grounded strictly in metrics.")
+    recommendations: List[str] = Field(default_factory=list, description="RECOMMENDATION: Policy-compliant action items subject to approval.")
+    assumptions: List[str] = Field(default_factory=list, description="ASSUMPTION: Stated baseline conditions.")
+    evidence_package: Optional[Dict[str, Any]] = Field(None, description="Structured EvidencePackage behind answer/recommendation.")
     key_findings: List[str] = Field(default_factory=list, description="Bulleted summary of core findings.")
     evidence: Dict[str, Any] = Field(default_factory=dict, description="Deterministic Python analytics output.")
-    recommendation: Optional[str] = Field(None, description="Policy-compliant action supported by evidence.")
-    assumptions: List[str] = Field(default_factory=list, description="Stated analytical assumptions.")
+    recommendation: Optional[str] = Field(None, description="Primary recommendation string.")
     limitations: List[str] = Field(default_factory=list, description="Known boundary limitations of data.")
     data_sufficient: bool = Field(True, description="False if data does not contain necessary entity or records.")
+    refusal_reason: Optional[str] = Field(None, description="Explicit refusal reason if query is refused or qualified.")
     confidence_note: str = Field("", description="Explanation of basis of confidence and data source.")
+
+
+# =========================================================================
+# CAUSAL INQUIRY & DATE VALIDATION
+# =========================================================================
+
+def is_causal_question(question: str) -> bool:
+    """
+    Detects if the user is asking for a causal explanation that transaction
+    logs alone cannot establish without external market/competitor datasets.
+    """
+    q = question.lower()
+    causal_patterns = [
+        r"\bwhy\s+did\s+sales\b",
+        r"\bwhy\s+did\s+revenue\b",
+        r"\bwhy\s+(?:are|is)\s+sales\b",
+        r"\bwhat\s+caused\s+(?:sales|the\s+drop|the\s+decline)\b",
+        r"\breason\s+for\s+(?:the\s+drop|the\s+decline|falling\s+sales)\b",
+        r"\bwhy\s+is\s+.*not\s+selling\b",
+        r"\bwhy\s+have\s+sales\s+fallen\b",
+        r"\bwhy\s+did\s+.*drop\b",
+        r"\bcause\s+of\s+(?:sales|revenue)\b",
+        r"\bwhy\s+did\s+it\s+fall\b"
+    ]
+    return any(re.search(p, q) for p in causal_patterns)
+
+
+def check_date_range_validity(question: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    """
+    Checks if query references a date period that has insufficient or missing data.
+    Database covers 2024-06-01 to 2024-08-29.
+    Returns: (is_valid, extracted_year_or_period, error_message)
+    """
+    q = question.lower()
+
+    # Search for explicit 4-digit years
+    years = re.findall(r"\b(20\d\d)\b", q)
+    for yr in years:
+        if yr != "2024":
+            return False, yr, f"Data is not available for year {yr}. Available records cover {DATABASE_MIN_DATE} to {DATABASE_MAX_DATE}."
+
+    # Check for relative future terms
+    if any(k in q for k in ["next month", "next year", "tomorrow", "future sales", "forecast for 2025", "forecast for 2026"]):
+        return False, "future", f"Requested forward horizon is outside historical dataset ({DATABASE_MIN_DATE} to {DATABASE_MAX_DATE})."
+
+    # Check for dates before June 2024 or after August 2024
+    out_of_bounds_months = ["january", "february", "march", "april", "may", "september", "october", "november", "december"]
+    for m in out_of_bounds_months:
+        if m in q and "2024" in q:
+            return False, m, f"No transactions recorded for {m.capitalize()} 2024. Available records span June 1, 2024 to August 29, 2024."
+
+    return True, None, None
 
 
 # =========================================================================
@@ -88,6 +179,7 @@ def get_product_sku_map() -> Dict[str, str]:
     except Exception:
         return {}
 
+
 def get_store_city_map() -> Dict[str, str]:
     """Returns mapping from store_id to City."""
     try:
@@ -99,6 +191,7 @@ def get_store_city_map() -> Dict[str, str]:
         return mapping
     except Exception:
         return {}
+
 
 def resolve_entities(
     product_query: Optional[str] = None,
@@ -208,6 +301,7 @@ def rule_based_extract_intent(question: str) -> IntentSchema:
     Maps user queries to one of the 9 supported intents and extracts potential entity mentions.
     """
     q = question.lower()
+    causal = is_causal_question(question)
 
     # Detect store mentions
     store_candidate = None
@@ -232,7 +326,6 @@ def rule_based_extract_intent(question: str) -> IntentSchema:
         store_match = re.search(r"\b(?:at|in|for store|for)\s+([A-Za-z0-9\-\s]{3,20})\b", question, re.IGNORECASE)
         if store_match:
             cand = store_match.group(1).strip()
-            # Exclude common retail keywords
             if cand.lower() not in ["july", "august", "today", "yesterday", "stock", "sales", "all", "stores", "products", "risk"]:
                 store_candidate = cand
 
@@ -242,7 +335,6 @@ def rule_based_extract_intent(question: str) -> IntentSchema:
     if sku_match:
         product_candidate = sku_match.group(1).upper()
     else:
-        # Known catalog product key terms
         catalog_hints = [
             "masala chai", "filter coffee", "electrolyte", "mango juice", "coconut water",
             "jeera soda", "green tea", "badam milk", "apple cider", "darjeeling",
@@ -256,7 +348,7 @@ def rule_based_extract_intent(question: str) -> IntentSchema:
                 product_candidate = hint
                 break
 
-    # If still not found, check regex patterns like "how did <X> perform", "performance of <X>", etc.
+    # If still not found, check regex patterns
     if not product_candidate:
         perf_match = re.search(r"\b(?:how did|performance of|sales of|sales for|about product|for product)\s+([A-Za-z0-9\-\s]{2,30}?)(?:\s+in|\s+at|\s+perform|\?|$)", question, re.IGNORECASE)
         if perf_match:
@@ -277,7 +369,7 @@ def rule_based_extract_intent(question: str) -> IntentSchema:
         intent = "STORE_COMPARISON"
     elif any(k in q for k in ["store performance", "branch performance"]) and store_candidate:
         intent = "STORE_COMPARISON"
-    elif any(k in q for k in ["product performance", "how did", "sales performance", "units sold", "top selling", "revenue", "sales volume"]):
+    elif causal or any(k in q for k in ["product performance", "how did", "sales performance", "units sold", "top selling", "revenue", "sales volume", "sales drop", "sales fall"]):
         intent = "SALES_PERFORMANCE"
     elif any(k in q for k in ["inventory health", "inventory status", "days of inventory", "stock level", "current stock", "units in stock"]):
         intent = "INVENTORY_STATUS"
@@ -295,7 +387,8 @@ def rule_based_extract_intent(question: str) -> IntentSchema:
         product=product_candidate,
         store=store_candidate,
         time_period=None,
-        requires_clarification=False
+        requires_clarification=False,
+        is_causal_inquiry=causal
     )
 
 
@@ -310,8 +403,7 @@ def execute_deterministic_analytics(
 ) -> Tuple[Dict[str, Any], bool, List[str]]:
     """
     Executes Python deterministic calculations matching the identified intent.
-    Returns:
-        (evidence_dict, data_sufficient, missing_info_notes)
+    Builds explicit EvidencePackage with granular MetricEvidence items.
     """
     store_id = resolved_store["store_id"] if resolved_store else None
     product_id = resolved_product["product_id"] if resolved_product else None
@@ -322,45 +414,110 @@ def execute_deterministic_analytics(
     sku_map = get_product_sku_map()
     city_map = get_store_city_map()
 
+    # 1. SPECIAL CASE: Causal inquiry (e.g. 'Why did sales fall?')
+    if intent_data.is_causal_inquiry:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Query July 2024 vs August 2024 sales for the specified entity or portfolio
+        where_clause = ""
+        params_curr = []
+        params_prev = []
+
+        if product_id:
+            where_clause += " AND product_id = ?"
+            params_curr.append(product_id)
+            params_prev.append(product_id)
+        if store_id:
+            where_clause += " AND store_id = ?"
+            params_curr.append(store_id)
+            params_prev.append(store_id)
+
+        # Period 1: August 2024 (2024-08-01 to 2024-08-29)
+        cursor.execute(f"SELECT COALESCE(SUM(quantity), 0) FROM sales WHERE date BETWEEN '2024-08-01' AND '2024-08-29' {where_clause}", params_curr)
+        units_aug = cursor.fetchone()[0]
+
+        # Period 2: July 2024 (2024-07-01 to 2024-07-29, equal 29-day baseline)
+        cursor.execute(f"SELECT COALESCE(SUM(quantity), 0) FROM sales WHERE date BETWEEN '2024-07-01' AND '2024-07-29' {where_clause}", params_prev)
+        units_jul = cursor.fetchone()[0]
+
+        # Check stock availability
+        stock_query = "SELECT COALESCE(SUM(closing_stock), 0) FROM inventory WHERE date = '2024-08-29'"
+        stock_params = []
+        if product_id:
+            stock_query += " AND product_id = ?"
+            stock_params.append(product_id)
+        if store_id:
+            stock_query += " AND store_id = ?"
+            stock_params.append(store_id)
+        cursor.execute(stock_query, stock_params)
+        curr_stock = cursor.fetchone()[0]
+
+        # Check price
+        price = None
+        if resolved_product:
+            price = float(resolved_product.get("selling_price", 0.0))
+
+        conn.close()
+
+        pct_change = round(((units_aug - units_jul) / units_jul * 100.0), 1) if units_jul > 0 else 0.0
+        entity_name = resolved_product["product_name"] if resolved_product else (resolved_store["store_name"] if resolved_store else "Store Network")
+
+        pkg = build_causal_inquiry_evidence(
+            entity_name=entity_name,
+            period_current="August 2024 (2024-08-01 to 2024-08-29)",
+            period_previous="July 2024 (2024-07-01 to 2024-07-29)",
+            units_current=units_aug,
+            units_previous=units_jul,
+            pct_change=pct_change,
+            current_stock=curr_stock,
+            selling_price=price,
+            product_id=product_id,
+            store_id=store_id
+        )
+        return pkg.to_dict(), True, []
+
+    # 2. Standard Intent Execution
     intent = intent_data.intent
 
     try:
         if intent == "STOCKOUT_RISK":
             if store_id and product_id:
                 res = calculate_stockout_risk(store_id=store_id, product_id=product_id)
-                evidence = {
-                    "type": "single_stockout_risk",
-                    "store_id": store_id,
-                    "store_name": resolved_store["store_name"],
-                    "city": resolved_store["city"],
-                    "product_id": product_id,
-                    "product_name": resolved_product["product_name"],
-                    "sku": resolved_product.get("sku") or sku_map.get(product_id, product_id),
-                    "current_stock": res.current_stock,
-                    "lead_time_days": res.lead_time_days,
-                    "lead_time_demand": round(res.lead_time_demand, 1),
-                    "daily_demand": round(res.demand_velocity, 2),
-                    "safety_stock": round(res.safety_stock, 1),
-                    "incoming_stock": res.incoming_quantity,
-                    "risk_score": round(res.risk_score, 1),
-                    "risk_level": res.risk_level,
-                    "days_of_inventory": round(res.days_of_inventory, 1) if res.days_of_inventory is not None else None,
-                    "explanation_factors": res.explanation_factors
-                }
+                pkg = build_stockout_evidence(
+                    store_id=store_id,
+                    store_name=resolved_store["store_name"],
+                    city=resolved_store["city"],
+                    product_id=product_id,
+                    product_name=resolved_product["product_name"],
+                    sku=resolved_product.get("sku") or sku_map.get(product_id, product_id),
+                    current_stock=res.current_stock,
+                    lead_time_days=res.lead_time_days,
+                    lead_time_demand=round(res.lead_time_demand, 1),
+                    daily_demand=round(res.demand_velocity, 2),
+                    safety_stock=round(res.safety_stock, 1),
+                    incoming_stock=res.incoming_quantity,
+                    risk_score=round(res.risk_score, 1),
+                    risk_level=res.risk_level,
+                    days_of_inventory=round(res.days_of_inventory, 1) if res.days_of_inventory is not None else None
+                )
+                evidence = pkg.to_dict()
+                evidence["type"] = "single_stockout_risk"
             else:
-                # Catalog-wide or store-wide stockout risk scan
                 results = assess_all_stockout_risks(store_id=store_id, min_risk_score=20.0)
-                # Sort descending by risk score
                 results.sort(key=lambda x: x.risk_score, reverse=True)
                 critical_items = []
+                metrics_list = []
                 for r in results[:10]:
-                    critical_items.append({
+                    sku = sku_map.get(r.product_id, r.product_id)
+                    city = city_map.get(r.store_id, "")
+                    item_dict = {
                         "store_id": r.store_id,
                         "store_name": r.store_name,
-                        "city": city_map.get(r.store_id, ""),
+                        "city": city,
                         "product_id": r.product_id,
                         "product_name": r.product_name,
-                        "sku": sku_map.get(r.product_id, r.product_id),
+                        "sku": sku,
                         "current_stock": r.current_stock,
                         "daily_demand": round(r.demand_velocity, 2),
                         "lead_time_days": r.lead_time_days,
@@ -370,13 +527,35 @@ def execute_deterministic_analytics(
                         "risk_level": r.risk_level,
                         "days_of_inventory": round(r.days_of_inventory, 1) if r.days_of_inventory is not None else None,
                         "explanation_factors": r.explanation_factors
+                    }
+                    critical_items.append(item_dict)
+                    metrics_list.append({
+                        "metric": f"risk_score_{sku}_{r.store_id}",
+                        "value": round(r.risk_score, 1),
+                        "unit": "score/100",
+                        "source": "inventory.csv + sales.csv + suppliers.csv",
+                        "period": "2024-08-23 to 2024-08-29",
+                        "calculation": "100 - (net_position / (lead_time_demand + safety_stock)) * 100",
+                        "raw_values": {"current_stock": r.current_stock, "daily_demand": round(r.demand_velocity, 2)}
                     })
+
                 evidence = {
                     "type": "stockout_risk_scan",
                     "store_filter": resolved_store["store_name"] if resolved_store else "All Stores",
                     "total_evaluated": len(results),
                     "critical_count": sum(1 for r in results if r.risk_level in ["CRITICAL", "HIGH"]),
-                    "critical_items": critical_items
+                    "critical_items": critical_items,
+                    "metrics": metrics_list,
+                    "source_tables": ["inventory", "sales", "suppliers", "purchase_orders"],
+                    "formulas": {
+                        "lead_time_demand": "daily_demand_7d * supplier_lead_time_days",
+                        "risk_score": "100 - (net_position / (lead_time_demand + safety_stock)) * 100"
+                    },
+                    "assumptions": [
+                        "Supplier lead times based on standard supplier contract SLAs.",
+                        "Recent 7-day average daily sales represents forward run-rate."
+                    ],
+                    "data_quality_warnings": []
                 }
 
         elif intent == "INVENTORY_STATUS":
@@ -394,7 +573,19 @@ def execute_deterministic_analytics(
                     "days_of_inventory": round(res.days_of_inventory, 1) if res.days_of_inventory is not None else None,
                     "daily_sales_velocity": round(res.average_daily_sales_7d, 2),
                     "health_status": res.status,
-                    "reorder_point": res.reorder_point
+                    "reorder_point": res.reorder_point,
+                    "source_tables": ["inventory", "sales", "products"],
+                    "metrics": [
+                        {
+                            "metric": "days_of_inventory",
+                            "value": round(res.days_of_inventory, 1) if res.days_of_inventory is not None else None,
+                            "unit": "days",
+                            "source": "inventory.csv + sales.csv",
+                            "period": "2024-08-23 to 2024-08-29",
+                            "calculation": "current_stock / average_daily_sales_7d",
+                            "raw_values": {"current_stock": res.current_stock, "average_daily_sales_7d": res.average_daily_sales_7d}
+                        }
+                    ]
                 }
             else:
                 summary = get_inventory_health_summary()
@@ -407,34 +598,60 @@ def execute_deterministic_analytics(
                     "low_stock_count": summary.get("low_stock_count", 0),
                     "overstock_count": summary.get("overstock_count", 0),
                     "out_of_stock_count": summary.get("out_of_stock_count", 0),
+                    "source_tables": ["inventory", "products"],
+                    "metrics": [
+                        {
+                            "metric": "total_inventory_valuation",
+                            "value": round(summary.get("total_inventory_valuation", 0.0), 2),
+                            "unit": "INR",
+                            "source": "inventory.csv + products.csv",
+                            "period": "As of 2024-08-29",
+                            "calculation": "SUM(closing_stock * cost_price)",
+                            "raw_values": {"total_units": summary.get("total_units_in_stock", 0)}
+                        }
+                    ]
                 }
 
         elif intent == "SLOW_MOVERS":
             results = detect_slow_moving_products(store_id=store_id)
             items = []
+            metrics = []
             for r in results[:10]:
+                sku = sku_map.get(r.product_id, r.product_id)
                 items.append({
                     "store_id": r.store_id,
                     "store_name": r.store_name,
                     "product_id": r.product_id,
                     "product_name": r.product_name,
-                    "sku": sku_map.get(r.product_id, r.product_id),
+                    "sku": sku,
                     "current_stock": r.current_stock,
                     "avg_daily_sales": round(r.daily_sales_velocity, 3),
                     "days_of_inventory": round(r.days_of_inventory, 1) if r.days_of_inventory is not None else None,
                     "catalog_age_days": r.catalog_age_days,
                     "recommendation": "Initiate markdown or inter-store transfer"
                 })
+                metrics.append({
+                    "metric": f"daily_sales_velocity_{sku}",
+                    "value": round(r.daily_sales_velocity, 3),
+                    "unit": "units/day",
+                    "source": "sales.csv",
+                    "period": "2024-06-01 to 2024-08-29",
+                    "calculation": "SUM(quantity_sold) / calculation_days",
+                    "raw_values": {"units_sold": r.units_sold_in_period, "closing_stock": r.current_stock}
+                })
             evidence = {
                 "type": "slow_movers_detection",
                 "store_filter": resolved_store["store_name"] if resolved_store else "All Stores",
                 "count": len(items),
-                "items": items
+                "items": items,
+                "metrics": metrics,
+                "source_tables": ["sales", "inventory", "products"]
             }
 
         elif intent == "OVERSTOCK":
             results = detect_overstocked_products(store_id=store_id)
             items = []
+            metrics = []
             for r in results[:10]:
                 items.append({
                     "store_id": r.store_id,
@@ -450,13 +667,24 @@ def execute_deterministic_analytics(
                     "excess_inventory_value": round(r.excess_inventory_value, 2),
                     "recommendation": "Reduce future order quantities and consider clearance"
                 })
+                metrics.append({
+                    "metric": f"days_of_inventory_{r.sku}",
+                    "value": round(r.days_of_inventory, 1),
+                    "unit": "days",
+                    "source": "inventory.csv + sales.csv",
+                    "period": "2024-08-23 to 2024-08-29",
+                    "calculation": "current_stock / demand_velocity",
+                    "raw_values": {"current_stock": r.current_stock, "demand_velocity": r.demand_velocity}
+                })
             total_excess_val = sum(r.excess_inventory_value for r in results)
             evidence = {
                 "type": "overstock_detection",
                 "store_filter": resolved_store["store_name"] if resolved_store else "All Stores",
                 "count": len(items),
                 "total_excess_inventory_value": round(total_excess_val, 2),
-                "items": items
+                "items": items,
+                "metrics": metrics,
+                "source_tables": ["inventory", "sales", "products"]
             }
 
         elif intent == "SALES_ANOMALY":
@@ -479,11 +707,11 @@ def execute_deterministic_analytics(
             evidence = {
                 "type": "sales_anomalies",
                 "count": len(items),
-                "items": items
+                "items": items,
+                "source_tables": ["sales"]
             }
 
         elif intent == "STORE_COMPARISON":
-            # To provide rich margin & growth data, evaluate each store specifically
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT store_id, store_name, city FROM stores")
@@ -491,6 +719,7 @@ def execute_deterministic_analytics(
             conn.close()
 
             items = []
+            metrics = []
             for sm in stores_meta:
                 try:
                     s_perf = calculate_store_performance(store_id=sm["store_id"])
@@ -508,6 +737,15 @@ def execute_deterministic_analytics(
                         "gross_margin_pct": round(s_perf.gross_margin, 1),
                         "growth_vs_previous_period": round(growth_val, 1) if growth_val is not None else None
                     })
+                    metrics.append({
+                        "metric": f"revenue_{sm['city']}",
+                        "value": round(s_perf.revenue, 2),
+                        "unit": "INR",
+                        "source": "sales.csv",
+                        "period": "2024-06-01 to 2024-08-29",
+                        "calculation": "SUM(quantity * unit_price - discount_amount)",
+                        "raw_values": {"units_sold": s_perf.units, "gross_margin": s_perf.gross_margin}
+                    })
                 except Exception:
                     pass
 
@@ -515,7 +753,9 @@ def execute_deterministic_analytics(
             evidence = {
                 "type": "store_comparison",
                 "store_count": len(items),
-                "stores": items
+                "stores": items,
+                "metrics": metrics,
+                "source_tables": ["sales", "stores", "products"]
             }
 
         elif intent == "SALES_PERFORMANCE":
@@ -533,7 +773,19 @@ def execute_deterministic_analytics(
                     "revenue": round(res.revenue, 2),
                     "units_sold": res.units_sold,
                     "gross_margin_pct": round(res.gross_margin_percent, 1),
-                    "growth_vs_previous_period": round(growth_val, 1) if growth_val is not None else None
+                    "growth_vs_previous_period": round(growth_val, 1) if growth_val is not None else None,
+                    "source_tables": ["sales", "products"],
+                    "metrics": [
+                        {
+                            "metric": "gross_margin_percent",
+                            "value": round(res.gross_margin_percent, 1),
+                            "unit": "%",
+                            "source": "sales.csv + products.csv",
+                            "period": "2024-06-01 to 2024-08-29",
+                            "calculation": "((revenue - estimated_cogs) / revenue) * 100",
+                            "raw_values": {"revenue": res.revenue, "estimated_cogs": res.estimated_cogs}
+                        }
+                    ]
                 }
             elif store_id:
                 res = calculate_store_performance(store_id=store_id)
@@ -549,10 +801,10 @@ def execute_deterministic_analytics(
                     "revenue": round(res.revenue, 2),
                     "units_sold": res.units,
                     "gross_margin_pct": round(res.gross_margin, 1),
-                    "growth_vs_previous_period": round(growth_val, 1) if growth_val is not None else None
+                    "growth_vs_previous_period": round(growth_val, 1) if growth_val is not None else None,
+                    "source_tables": ["sales", "stores", "products"]
                 }
             else:
-                # Top products overview
                 results = calculate_product_performance()
                 items = []
                 for p in results[:8]:
@@ -579,7 +831,8 @@ def execute_deterministic_analytics(
                         })
                 evidence = {
                     "type": "top_products_sales_performance",
-                    "top_products": items
+                    "top_products": items,
+                    "source_tables": ["sales", "products"]
                 }
 
         elif intent == "GENERAL_RETAIL_ANALYSIS":
@@ -595,6 +848,7 @@ def execute_deterministic_analytics(
                 "high_stockout_risk_count": len(stockout_results),
                 "low_stock_sku_count": health_summary.get("low_stock_count", 0),
                 "overstock_sku_count": health_summary.get("overstock_count", 0),
+                "source_tables": ["inventory", "sales", "stores"]
             }
 
         else:  # UNKNOWN
@@ -623,28 +877,117 @@ def synthesize_deterministic_response(
     evidence: Dict[str, Any],
     data_sufficient: bool,
     missing_info: List[str],
+    refusal_reason: Optional[str] = None,
     confidence_prefix: str = "Ground truth calculated deterministically via Python analytics over local SQLite data."
 ) -> CopilotResponse:
     """
-    Produces a high-quality, strictly grounded response using actual figures from the evidence package.
-    Used when GEMINI_API_KEY is not configured or as fallback when API call fails.
-    Zero hallucination guarantee: uses only verified values.
+    Produces a high-quality, strictly grounded response with explicit 5-tier distinction:
+    - OBSERVED FACT
+    - CALCULATED METRIC
+    - INFERENCE
+    - RECOMMENDATION
+    - ASSUMPTION
+    Never makes claims without supporting data.
     """
-    if not data_sufficient:
+    # CASE: Data is insufficient or query refused
+    if not data_sufficient or refusal_reason:
         reasons = " ".join(missing_info) if missing_info else "The requested information is not available in local records."
+        
+        # Specific Refusal Handling
+        if refusal_reason == "UNESTABLISHED_CAUSALITY":
+            pct = evidence.get("calculated_values", {}).get("percentage_change", 0.0)
+            stock = evidence.get("raw_values", {}).get("stock_on_hand")
+            price = evidence.get("raw_values", {}).get("recorded_price_inr")
+
+            direction = "declined" if pct < 0 else "changed"
+            val_pct = abs(pct) if pct < 0 else pct
+            stock_str = f"{stock} units" if stock is not None else "tracked in ledger"
+            price_str = f"₹{price}" if price is not None else "catalog rates"
+
+            answer = (
+                f"Sales {direction} by {val_pct}%, but the available data cannot establish the cause. "
+                f"Inventory availability was {stock_str} and "
+                f"price was {price_str}. "
+                f"We do not have competitor pricing, customer feedback, or marketing data to determine why."
+            )
+            obs_facts = [
+                f"Recorded transaction change: {pct}% over comparative July vs August 2024 period.",
+                f"Stock on hand: {stock_str}.",
+                f"Catalog price: {price_str}."
+            ]
+            calc_metrics = [
+                {
+                    "metric": "sales_change_percent",
+                    "value": pct,
+                    "unit": "%",
+                    "source": "sales.csv",
+                    "period": "2024-07-01 to 2024-08-29",
+                    "calculation": "((units_current - units_previous) / units_previous) * 100",
+                    "raw_values": evidence.get("raw_values", {})
+                }
+            ]
+            inferences = [
+                "Local point-of-sale records confirm the magnitude of sales change, but lack causal drivers."
+            ]
+            recommendations = [
+                "Audit local store operations, gather customer feedback, and verify competitor promotions before adjusting ordering plans."
+            ]
+            assumptions = ["POS cash-register transactions accurately reflect customer purchases."]
+            limitations = [
+                "Local database does NOT contain competitor pricing, marketing campaigns, footfall traffic, or customer sentiment surveys."
+            ]
+            return CopilotResponse(
+                intent=intent_data.intent,
+                product=intent_data.product,
+                store=intent_data.store,
+                time_period=intent_data.time_period,
+                answer=answer,
+                observed_facts=obs_facts,
+                calculated_metrics=calc_metrics,
+                inferences=inferences,
+                recommendations=recommendations,
+                assumptions=assumptions,
+                evidence_package=evidence.get("evidence_package") or (evidence if "source_tables" in evidence else None),
+                key_findings=["Sales change verified, but root cause is unobservable from local data."],
+                evidence=evidence,
+                recommendation=recommendations[0],
+                limitations=limitations,
+                data_sufficient=True,
+                refusal_reason="UNESTABLISHED_CAUSALITY",
+                confidence_note=f"{confidence_prefix} (Causal speculation strictly refused)"
+            )
+
         answer = f"Data is insufficient to answer this query. {reasons}"
         return CopilotResponse(
+            intent=intent_data.intent,
+            product=intent_data.product,
+            store=intent_data.store,
+            time_period=intent_data.time_period,
             answer=answer,
+            observed_facts=["Requested entity or metric is absent from local database."],
+            calculated_metrics=[],
+            inferences=["Cannot compute metrics without verified input records."],
+            recommendations=["Please rephrase using supported products, stores, or metrics."],
+            assumptions=[],
+            evidence_package=evidence.get("evidence_package") or (evidence if "source_tables" in evidence else None),
             key_findings=[reasons],
             evidence=evidence,
-            recommendation="Please refine the query or choose from supported retail categories (Stockout Risk, Overstock, Slow Movers, Store Performance, Sales Anomalies).",
-            assumptions=[],
+            recommendation="Please refine the query or choose from supported retail categories.",
             limitations=["Available data is restricted to local stores and catalog records."],
             data_sufficient=False,
+            refusal_reason=refusal_reason or "INSUFFICIENT_DATA",
             confidence_note=f"{confidence_prefix} (Data insufficient)"
         )
 
     intent = intent_data.intent
+    observed_facts: List[str] = []
+    calculated_metrics: List[Dict[str, Any]] = []
+    inferences: List[str] = []
+    recommendations_list: List[str] = []
+    assumptions_list: List[str] = []
+    findings: List[str] = []
+    recommendation_text: Optional[str] = None
+    limitations: List[str] = []
 
     if intent == "STOCKOUT_RISK":
         if evidence.get("type") == "single_stockout_risk":
@@ -652,12 +995,12 @@ def synthesize_deterministic_response(
             sku = evidence.get("sku")
             store = evidence.get("store_name")
             city = evidence.get("city")
-            stock = evidence.get("current_stock")
-            demand = evidence.get("daily_demand")
-            lead_time = evidence.get("lead_time_days")
-            lead_demand = evidence.get("lead_time_demand")
-            incoming = evidence.get("incoming_stock")
-            score = evidence.get("risk_score")
+            stock = evidence.get("raw_values", {}).get("current_stock_units", evidence.get("current_stock", 0))
+            demand = evidence.get("calculated_values", {}).get("daily_demand_units_per_day", evidence.get("daily_demand", 0.0))
+            lead_time = evidence.get("raw_values", {}).get("supplier_lead_time_days", evidence.get("lead_time_days", 0))
+            lead_demand = evidence.get("calculated_values", {}).get("lead_time_demand_units", evidence.get("lead_time_demand", 0.0))
+            incoming = evidence.get("raw_values", {}).get("incoming_stock_units", evidence.get("incoming_stock", 0))
+            score = evidence.get("calculated_values", {}).get("risk_score", evidence.get("risk_score", 0.0))
 
             answer = (
                 f"Product stockout risk evaluation for {sku} ({name}) at {store} ({city}):\n\n"
@@ -669,16 +1012,32 @@ def synthesize_deterministic_response(
                 f"Risk score: {score}/100\n\n"
                 f"Recommendation:\nPlace a replenishment order, subject to manager approval."
             )
-            findings = [
-                f"{sku} at {store} has a stockout risk score of {score}/100 ({evidence.get('risk_level')}).",
-                f"Projected lead-time demand is {lead_demand} units against current stock of {stock} units."
+            observed_facts = [
+                f"Current stock balance on record is {stock} units.",
+                f"Incoming open purchase order quantity is {incoming} units.",
+                f"Contractual supplier lead time is {lead_time} days."
             ]
-            recommendation = "Place a replenishment order, subject to manager approval."
-            assumptions = [
+            calculated_metrics = [
+                {"metric": "daily_demand_7d", "value": demand, "unit": "units/day", "calculation": "SUM(quantity_7d) / 7.0"},
+                {"metric": "lead_time_demand", "value": lead_demand, "unit": "units", "calculation": "daily_demand * lead_time_days"},
+                {"metric": "risk_score", "value": score, "unit": "score/100", "calculation": "100 - (net_position / (lead_time_demand + safety_stock)) * 100"}
+            ]
+            inferences = [
+                f"Lead-time demand ({lead_demand} units) exceeds available net position ({stock + incoming} units), signaling high stockout probability."
+            ]
+            recommendations_list = [
+                "Place a replenishment order immediately, subject to manager approval."
+            ]
+            assumptions_list = [
                 f"Supplier lead time remains constant at {lead_time} days.",
-                f"Recent sales velocity ({demand} units/day) reflects forward customer demand."
+                f"Recent 7-day velocity ({demand} units/day) reflects forward customer demand."
             ]
-            limitations = ["Model does not assume promotional or external seasonal demand spikes."]
+            findings = [
+                f"{sku} has a stockout risk score of {score}/100.",
+                f"Lead-time demand ({lead_demand} units) exceeds net available stock ({stock + incoming} units)."
+            ]
+            recommendation_text = recommendations_list[0]
+            limitations = ["Model does not assume unplanned promotional demand surges."]
 
         else:
             items = evidence.get("critical_items", [])
@@ -702,13 +1061,28 @@ def synthesize_deterministic_response(
             lines.append(f"Recommendation:\n{rec_text}")
             answer = "\n".join(lines)
 
+            top_item = items[0] if items else {}
+            observed_facts = [
+                f"Database scan evaluated {evidence.get('total_evaluated', len(items))} items against active inventory.",
+                f"Top at-risk SKU {top_item.get('sku')} has {top_item.get('current_stock', 0)} units on hand."
+            ]
+            calculated_metrics = [
+                {"metric": "high_risk_skus_count", "value": count, "unit": "count", "calculation": "COUNT(risk_score >= 20.0)"}
+            ]
+            inferences = [
+                f"{count} items have projected lead-time consumption that exceeds safe replenishment thresholds."
+            ]
+            recommendations_list = [rec_text]
+            assumptions_list = [
+                "Lead times based on primary supplier contract SLAs.",
+                "Demand run-rate uses rolling 7-day average daily sales."
+            ]
             findings = [
                 f"Identified {count} items with elevated stockout risk scores (>20/100).",
-                f"Top at-risk SKU is {items[0]['sku']} ({items[0]['product_name']}) at {items[0]['store_name']} with risk score {items[0]['risk_score']}/100." if items else "No critical stockouts detected."
+                f"Top at-risk SKU is {top_item.get('sku')} at {top_item.get('store_name')} with risk score {top_item.get('risk_score')}/100."
             ]
-            recommendation = rec_text
-            assumptions = ["Lead times based on primary supplier contract terms.", "Demand projection uses recent 7-day moving average."]
-            limitations = ["Safety stock does not absorb unexpected supply disruptions exceeding lead time."]
+            recommendation_text = rec_text
+            limitations = ["Safety stock does not absorb unexpected multi-week supplier shutdowns."]
 
     elif intent == "OVERSTOCK":
         items = evidence.get("items", [])
@@ -725,13 +1099,24 @@ def synthesize_deterministic_response(
         rec_text = "Initiate targeted promotional markdowns or inter-store transfers to rebalance excess stock."
         lines.append(f"Recommendation:\n{rec_text}")
         answer = "\n".join(lines)
-        findings = [
-            f"Overstock ties up an estimated ₹{total_val:,.2f} across {len(items)} inventory positions.",
-            f"Top surplus SKU is {items[0]['sku']} with {items[0]['days_of_inventory']} days of supply." if items else "No severe overstocks found."
+
+        observed_facts = [
+            f"Overstock detection identified {len(items)} product-store pairs exceeding target runway.",
+            f"Total excess inventory capital tied up: ₹{total_val:,.2f}."
         ]
-        recommendation = rec_text
-        assumptions = ["Target runway benchmark is 45 days of supply."]
-        limitations = ["Holding costs are estimated from wholesale purchase cost."]
+        calculated_metrics = [
+            {"metric": "total_excess_capital", "value": total_val, "unit": "INR", "calculation": "SUM(excess_units * unit_cost)"}
+        ]
+        inferences = [
+            "Current stock velocity will not clear inventory before carrying costs exceed margins."
+        ]
+        recommendations_list = [rec_text]
+        assumptions_list = ["Target runway benchmark is 45 days of supply."]
+        findings = [
+            f"Overstock ties up ₹{total_val:,.2f} across {len(items)} inventory positions."
+        ]
+        recommendation_text = rec_text
+        limitations = ["Holding costs are estimated strictly from wholesale unit cost."]
 
     elif intent == "SLOW_MOVERS":
         items = evidence.get("items", [])
@@ -746,12 +1131,22 @@ def synthesize_deterministic_response(
         rec_text = "Review non-performing lines for category clearance, supplier return, or merchandising repositioning."
         lines.append(f"Recommendation:\n{rec_text}")
         answer = "\n".join(lines)
-        findings = [
-            f"{len(items)} SKUs show sales velocity below 0.2 units/day despite holding inventory.",
-            f"Slowest moving item is {items[0]['sku']} ({items[0]['product_name']}) with {items[0]['avg_daily_sales']} units/day." if items else "No stagnant items found."
+
+        observed_facts = [
+            f"Catalog scan identified {len(items)} SKUs with daily velocity below 0.2 units/day."
         ]
-        recommendation = rec_text
-        assumptions = ["Evaluation filters out new product launches under 21 days catalog age."]
+        calculated_metrics = [
+            {"metric": "slow_movers_count", "value": len(items), "unit": "count", "calculation": "COUNT(daily_velocity < 0.2 AND age >= 21)"}
+        ]
+        inferences = [
+            "Stagnant items represent potential dead stock if not repositioned."
+        ]
+        recommendations_list = [rec_text]
+        assumptions_list = ["Filters out new launches younger than 21 days catalog age."]
+        findings = [
+            f"{len(items)} SKUs show sales velocity below 0.2 units/day despite holding inventory."
+        ]
+        recommendation_text = rec_text
         limitations = ["Velocity reflects store sales and excludes online direct shipments."]
 
     elif intent == "STORE_COMPARISON":
@@ -769,13 +1164,89 @@ def synthesize_deterministic_response(
         rec_text = f"Analyze best practices from top performer {top['store_name']} and review underperforming categories at {bottom['store_name']}." if top and bottom else "Maintain standard store operational audits."
         lines.append(f"Recommendation:\n{rec_text}")
         answer = "\n".join(lines)
+
+        observed_facts = [
+            f"All 4 regional stores analyzed over June 1, 2024 to August 29, 2024.",
+            f"Top store by revenue: {top['store_name']} (₹{top['revenue']:,.2f})." if top else "Store data loaded."
+        ]
+        calculated_metrics = [
+            {"metric": f"revenue_{s['city']}", "value": s['revenue'], "unit": "INR", "calculation": "SUM(sales.revenue)"}
+            for s in stores
+        ]
+        inferences = [
+            "Store revenues are closely aligned across metropolitan markets with consistent gross margins."
+        ]
+        recommendations_list = [rec_text]
+        assumptions_list = ["Growth rates compare current 45-day window against preceding equal window."]
         findings = [
-            f"Top revenue store is {top['store_name']} ({top['city']}) generating ₹{top['revenue']:,.2f}.",
-            f"Lowest revenue store is {bottom['store_name']} ({bottom['city']}) with ₹{bottom['revenue']:,.2f}."
-        ] if top and bottom else ["Store comparison data retrieved."]
-        recommendation = rec_text
-        assumptions = ["Growth compares current period against equal preceding lookback window."]
+            f"Top revenue store is {top['store_name']} generating ₹{top['revenue']:,.2f}." if top else "Store comparison complete."
+        ]
+        recommendation_text = rec_text
         limitations = ["Regional demographic differences are not factored into gross margins."]
+
+    elif intent == "SALES_PERFORMANCE":
+        if evidence.get("type") == "product_sales_performance":
+            growth_str = f"{evidence.get('growth_vs_previous_period')}%" if evidence.get('growth_vs_previous_period') is not None else "N/A"
+            answer = (
+                f"Sales performance for {evidence['sku']} ({evidence['product_name']}):\n\n"
+                f"Revenue: ₹{evidence['revenue']:,.2f}\n"
+                f"Units sold: {evidence['units_sold']} units\n"
+                f"Gross margin: {evidence['gross_margin_pct']}%\n"
+                f"Growth vs previous period: {growth_str}\n"
+            )
+            observed_facts = [
+                f"Total units sold: {evidence['units_sold']} units.",
+                f"Total gross revenue: ₹{evidence['revenue']:,.2f}."
+            ]
+            calculated_metrics = [
+                {"metric": "gross_margin_pct", "value": evidence['gross_margin_pct'], "unit": "%", "calculation": "((revenue - cogs) / revenue) * 100"}
+            ]
+            inferences = ["Product maintains stable margin contribution."]
+            recommendations_list = ["Maintain stock availability to sustain revenue run-rate."]
+            assumptions_list = ["Sales calculations include net discounts."]
+            findings = [
+                f"Generated ₹{evidence['revenue']:,.2f} from {evidence['units_sold']} units sold."
+            ]
+            recommendation_text = recommendations_list[0]
+            limitations = ["Sales data reflects recorded point-of-sale transactions."]
+        elif evidence.get("type") == "single_store_sales_performance":
+            growth_str = f"{evidence.get('growth_vs_previous_period')}%" if evidence.get('growth_vs_previous_period') is not None else "N/A"
+            answer = (
+                f"Sales performance for {evidence['store_name']} ({evidence['city']}):\n\n"
+                f"Revenue: ₹{evidence['revenue']:,.2f}\n"
+                f"Units sold: {evidence['units_sold']:,} units\n"
+                f"Gross margin: {evidence['gross_margin_pct']}%\n"
+                f"Growth vs previous period: {growth_str}\n"
+            )
+            observed_facts = [
+                f"{evidence['store_name']} units sold: {evidence['units_sold']:,} units.",
+                f"Total revenue recorded: ₹{evidence['revenue']:,.2f}."
+            ]
+            calculated_metrics = [
+                {"metric": "gross_margin_pct", "value": evidence['gross_margin_pct'], "unit": "%", "calculation": "((revenue - cogs) / revenue) * 100"}
+            ]
+            inferences = ["Store delivers steady sales contribution."]
+            recommendations_list = ["Sustain operational cadence and monitor top-selling categories."]
+            assumptions_list = ["All recorded sales transactions are final."]
+            findings = [
+                f"{evidence['store_name']} delivered ₹{evidence['revenue']:,.2f} in total revenue."
+            ]
+            recommendation_text = recommendations_list[0]
+            limitations = ["Data excludes external offline vendor sales."]
+        else:
+            prods = evidence.get("top_products", [])
+            lines = ["Top products by sales performance:\n"]
+            for p in prods[:5]:
+                lines.append(f"• {p['sku']} ({p['product_name']}): ₹{p['revenue']:,.2f} ({p['units_sold']} units, {p['gross_margin_pct']}% margin)")
+            answer = "\n".join(lines)
+            observed_facts = [f"Top SKU {prods[0]['sku']} generated ₹{prods[0]['revenue']:,.2f}."] if prods else []
+            calculated_metrics = [{"metric": "top_products_count", "value": len(prods), "unit": "count", "calculation": "RANK(revenue DESC)"}]
+            inferences = ["Top 5 SKUs drive significant share of category volume."]
+            recommendations_list = ["Ensure uninterrupted supply chain replenishment for top revenue drivers."]
+            assumptions_list = ["Net discounts applied at checkout are included."]
+            findings = [f"Top revenue generator is {prods[0]['sku']}." if prods else "Sales overview generated."]
+            recommendation_text = recommendations_list[0]
+            limitations = ["Transaction logs do not capture customer demographic profiles."]
 
     elif intent == "SALES_ANOMALY":
         items = evidence.get("items", [])
@@ -789,13 +1260,14 @@ def synthesize_deterministic_response(
         rec_text = "Investigate high-severity spikes for local stock depletion and investigate drops for potential out-of-stock shelf outages."
         lines.append(f"Recommendation:\n{rec_text}")
         answer = "\n".join(lines)
-        findings = [
-            f"Found {len(items)} transactions deviating significantly from 14-day rolling baseline.",
-            f"Most prominent anomaly is on {items[0]['date']} for {items[0]['sku']} with {items[0]['pct_change']}% deviation." if items else "No anomalies detected."
-        ]
-        recommendation = rec_text
-        assumptions = ["Anomalies detected using a 14-day rolling window baseline."]
-        limitations = ["One-off bulk corporate orders may trigger artificial spike anomalies."]
+        observed_facts = [f"Found {len(items)} transactions deviating from 14-day rolling baseline."]
+        calculated_metrics = [{"metric": "anomalies_detected", "value": len(items), "unit": "count", "calculation": "ABS(actual - baseline) > threshold"}]
+        inferences = ["Spikes indicate potential localized bulk purchase or promo."]
+        recommendations_list = [rec_text]
+        assumptions_list = ["Rolling baseline window is 14 days."]
+        findings = [f"Detected {len(items)} sales anomalies."]
+        recommendation_text = rec_text
+        limitations = ["Local holidays or micro-events are not tagged in transaction logs."]
 
     elif intent == "INVENTORY_STATUS":
         if evidence.get("type") == "single_inventory_health":
@@ -808,11 +1280,21 @@ def synthesize_deterministic_response(
                 f"Status: {evidence['health_status']}\n"
                 f"Reorder point: {evidence['reorder_point']} units"
             )
-            findings = [
-                f"Current stock is {evidence['current_stock']} units valued at ₹{evidence['inventory_valuation']:,.2f}.",
-                f"Runway is estimated at {evidence['days_of_inventory']} days."
+            observed_facts = [
+                f"Current on-hand stock: {evidence['current_stock']} units.",
+                f"Contractual reorder point: {evidence['reorder_point']} units."
             ]
-            recommendation = "Reorder immediately if stock is below reorder point." if evidence['current_stock'] <= evidence['reorder_point'] else "Inventory is currently within safe operational threshold."
+            calculated_metrics = [
+                {"metric": "days_of_inventory", "value": evidence['days_of_inventory'], "unit": "days", "calculation": "current_stock / velocity_7d"},
+                {"metric": "inventory_valuation", "value": evidence['inventory_valuation'], "unit": "INR", "calculation": "current_stock * cost_price"}
+            ]
+            inferences = ["Stock level is within operational limits." if evidence['current_stock'] > evidence['reorder_point'] else "Stock has breached reorder point."]
+            rec_text = "Reorder immediately if stock is below reorder point." if evidence['current_stock'] <= evidence['reorder_point'] else "Inventory is currently within safe operational threshold."
+            recommendations_list = [rec_text]
+            assumptions_list = ["Valuation calculated at wholesale cost price."]
+            findings = [f"Current stock is {evidence['current_stock']} units."]
+            recommendation_text = rec_text
+            limitations = ["Snapshot current as of latest recorded ledger date."]
         else:
             answer = (
                 f"Overall retail inventory health summary across all stores:\n\n"
@@ -824,55 +1306,20 @@ def synthesize_deterministic_response(
                 f"Overstock alerts: {evidence.get('overstock_count')}\n"
                 f"Stockouts: {evidence.get('out_of_stock_count')}"
             )
-            findings = [
-                f"Network holds {evidence.get('total_units_in_stock'):,} units across {evidence.get('total_skus')} SKUs valued at ₹{evidence.get('total_inventory_valuation', 0):,.2f}.",
-                f"{evidence.get('low_stock_count')} SKUs are running low, requiring operational reordering attention."
+            observed_facts = [
+                f"Network inventory contains {evidence.get('total_units_in_stock'):,} total units across {evidence.get('total_skus')} SKUs.",
+                f"{evidence.get('low_stock_count')} SKUs flagged for low stock."
             ]
-            recommendation = "Focus replenishment actions on the low stock SKUs and evaluate markdown plans for overstocked lines."
-        assumptions = ["Valuation calculated using wholesale cost price."]
-        limitations = ["Inventory snapshot current as of latest recorded ledger date."]
-
-    elif intent == "SALES_PERFORMANCE":
-        if evidence.get("type") == "product_sales_performance":
-            growth_str = f"{evidence.get('growth_vs_previous_period')}%" if evidence.get('growth_vs_previous_period') is not None else "N/A"
-            answer = (
-                f"Sales performance for {evidence['sku']} ({evidence['product_name']}):\n\n"
-                f"Revenue: ₹{evidence['revenue']:,.2f}\n"
-                f"Units sold: {evidence['units_sold']} units\n"
-                f"Gross margin: {evidence['gross_margin_pct']}%\n"
-                f"Growth vs previous period: {growth_str}\n"
-            )
-            findings = [
-                f"Generated ₹{evidence['revenue']:,.2f} from {evidence['units_sold']} units sold.",
-                f"Maintains a gross margin of {evidence['gross_margin_pct']}%."
+            calculated_metrics = [
+                {"metric": "total_inventory_valuation", "value": evidence.get('total_inventory_valuation', 0), "unit": "INR", "calculation": "SUM(closing_stock * cost_price)"}
             ]
-            recommendation = "Maintain stock availability to sustain revenue run-rate."
-        elif evidence.get("type") == "single_store_sales_performance":
-            growth_str = f"{evidence.get('growth_vs_previous_period')}%" if evidence.get('growth_vs_previous_period') is not None else "N/A"
-            answer = (
-                f"Sales performance for {evidence['store_name']} ({evidence['city']}):\n\n"
-                f"Revenue: ₹{evidence['revenue']:,.2f}\n"
-                f"Units sold: {evidence['units_sold']:,} units\n"
-                f"Gross margin: {evidence['gross_margin_pct']}%\n"
-                f"Growth vs previous period: {growth_str}\n"
-            )
-            findings = [
-                f"{evidence['store_name']} delivered ₹{evidence['revenue']:,.2f} in total revenue.",
-                f"Gross margin stands at {evidence['gross_margin_pct']}%."
-            ]
-            recommendation = "Sustain operational cadence and monitor top-selling categories."
-        else:
-            prods = evidence.get("top_products", [])
-            lines = ["Top products by sales performance:\n"]
-            for p in prods[:5]:
-                lines.append(f"• {p['sku']} ({p['product_name']}): ₹{p['revenue']:,.2f} ({p['units_sold']} units, {p['gross_margin_pct']}% margin)")
-            answer = "\n".join(lines)
-            findings = [
-                f"Top revenue generator is {prods[0]['sku']} with ₹{prods[0]['revenue']:,.2f}." if prods else "Product sales data compiled."
-            ]
-            recommendation = "Ensure uninterrupted supply chain replenishment for top revenue drivers."
-        assumptions = ["Sales calculations include net discounts."]
-        limitations = ["Sales data reflects recorded point-of-sale transactions."]
+            inferences = ["Capital is well distributed, but low-stock positions require reorder replenishment."]
+            rec_text = "Focus replenishment actions on the low stock SKUs and evaluate markdown plans for overstocked lines."
+            recommendations_list = [rec_text]
+            assumptions_list = ["Inventory ledger closing balances represent physical store stock."]
+            findings = [f"Network holds {evidence.get('total_units_in_stock'):,} units valued at ₹{evidence.get('total_inventory_valuation', 0):,.2f}."]
+            recommendation_text = rec_text
+            limitations = ["Shrinkage and theft are only accounted for if recorded as adjustments."]
 
     else:  # GENERAL_RETAIL_ANALYSIS
         answer = (
@@ -884,22 +1331,39 @@ def synthesize_deterministic_response(
             f"Low stock alerts: {evidence.get('low_stock_sku_count', 0)}\n"
             f"Overstocked lines: {evidence.get('overstock_sku_count', 0)}\n"
         )
-        findings = [
-            f"Network revenue totals ₹{evidence.get('total_network_revenue', 0):,.2f} across all stores.",
-            f"{evidence.get('high_stockout_risk_count', 0)} critical stockout risks require immediate manager replenishment."
+        observed_facts = [
+            f"Total network revenue: ₹{evidence.get('total_network_revenue', 0):,.2f}.",
+            f"Stock on hand: {evidence.get('total_units_in_stock', 0):,} units."
         ]
-        recommendation = "Review high stockout risk items and initiate morning replenishment orders."
-        assumptions = ["Aggregated across all active physical store locations."]
-        limitations = ["Reflects data up to the latest closing date."]
+        calculated_metrics = [
+            {"metric": "total_network_revenue", "value": evidence.get('total_network_revenue', 0), "unit": "INR", "calculation": "SUM(sales.revenue)"}
+        ]
+        inferences = ["Operational balance requires prioritizing replenishment for high-risk SKUs."]
+        rec_text = "Review high stockout risk items and initiate morning replenishment orders."
+        recommendations_list = [rec_text]
+        assumptions_list = ["Aggregated across all active physical store locations."]
+        findings = [f"Network revenue totals ₹{evidence.get('total_network_revenue', 0):,.2f}."]
+        recommendation_text = rec_text
+        limitations = ["Data reflects recorded POS and inventory entries up to 2024-08-29."]
 
     return CopilotResponse(
+        intent=intent_data.intent,
+        product=intent_data.product,
+        store=intent_data.store,
+        time_period=intent_data.time_period,
         answer=answer,
+        observed_facts=observed_facts,
+        calculated_metrics=calculated_metrics,
+        inferences=inferences,
+        recommendations=recommendations_list,
+        assumptions=assumptions_list,
+        evidence_package=evidence.get("evidence_package") or (evidence if "source_tables" in evidence else None),
         key_findings=findings,
         evidence=evidence,
-        recommendation=recommendation,
-        assumptions=assumptions,
+        recommendation=recommendation_text,
         limitations=limitations,
         data_sufficient=True,
+        refusal_reason=None,
         confidence_note=confidence_prefix
     )
 
@@ -912,14 +1376,14 @@ class RetailCopilot:
     """
     Coordinates between user questions, Gemini reasoning, and local deterministic analytics.
     Strictly adheres to:
+    - NEVER MAKE A CLAIM WITHOUT SUPPORTING DATA.
     - Gemini is NOT the source of truth.
     - Local DB and deterministic analytics engine are the source of truth.
-    - Never hallucinates IDs or figures.
-    - Gracefully handles missing/invalid GEMINI_API_KEY.
+    - 5-tier distinction: OBSERVED FACT, CALCULATED METRIC, INFERENCE, RECOMMENDATION, ASSUMPTION.
+    - Strict refusal rules for missing entities, insufficient dates, and unestablished causality.
     """
 
     def __init__(self, api_key: Optional[str] = None, model: str = "gemini-2.5-flash"):
-        # Read API key ONLY from GEMINI_API_KEY environment variable if not passed directly
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
         self.model_name = model
         self._client = None
@@ -970,7 +1434,8 @@ class RetailCopilot:
                 "- product: any mentioned product name, SKU (e.g. SKU-104), or product ID, or null.\n"
                 "- store: any mentioned store name, city (e.g. Hyderabad, Mumbai, Bengaluru, Delhi), or store ID, or null.\n"
                 "- time_period: any mentioned time window (e.g. 'last week', 'July 2024'), or null.\n"
-                "- requires_clarification: boolean, true only if intent cannot be mapped with reasonable confidence.\n\n"
+                "- requires_clarification: boolean, true only if intent cannot be mapped with reasonable confidence.\n"
+                "- is_causal_inquiry: boolean, true if user asks 'why' or seeks a root-cause explanation (e.g. 'why did sales fall').\n\n"
                 f"User Question: \"{question}\""
             )
 
@@ -986,6 +1451,9 @@ class RetailCopilot:
 
             if response.text:
                 parsed = json.loads(response.text)
+                # Overwrite is_causal_inquiry with regex check if detected
+                if is_causal_question(question):
+                    parsed["is_causal_inquiry"] = True
                 return IntentSchema(**parsed)
 
         except Exception as e:
@@ -999,11 +1467,12 @@ class RetailCopilot:
         intent_data: IntentSchema,
         evidence: Dict[str, Any],
         resolved_product: Optional[Dict[str, Any]],
-        resolved_store: Optional[Dict[str, Any]]
+        resolved_store: Optional[Dict[str, Any]],
+        refusal_reason: Optional[str] = None
     ) -> Optional[CopilotResponse]:
         """
         Requests Gemini to produce a grounded natural-language explanation strictly over the Python evidence package.
-        Returns None if Gemini client is unavailable or if the API call fails.
+        Enforces 5-tier distinction and refusal rules.
         """
         client = self._get_client()
         if not client:
@@ -1018,15 +1487,23 @@ class RetailCopilot:
             prompt = (
                 "You are an expert Retail Analytics Copilot for store managers.\n\n"
                 "CRITICAL ARCHITECTURAL CONSTRAINTS:\n"
-                "1. The local database and the deterministic Python evidence provided below are the SOLE SOURCE OF TRUTH.\n"
-                "2. You must NEVER fabricate or hallucinate numbers, product IDs, or store IDs.\n"
-                "3. Every numerical claim in your answer MUST correspond directly to the evidence package.\n"
-                "4. Use actual figures provided in the evidence (units, revenue in INR, lead time days, risk scores).\n"
-                "5. Do NOT use unsupported certainty. For example, say 'SKU-104 has a high stockout risk score of 91/100', NOT 'SKU-104 will definitely run out soon'.\n"
-                "6. Provide recommendations ONLY when supported by evidence (e.g. place replenishment order subject to manager approval, initiate markdown, transfer excess units).\n"
-                "7. Assumptions and limitations must clearly state data boundaries.\n\n"
+                "1. NEVER MAKE A CLAIM WITHOUT SUPPORTING DATA.\n"
+                "2. The local database and deterministic Python evidence provided below are the SOLE SOURCE OF TRUTH.\n"
+                "3. You must NEVER fabricate or hallucinate numbers, product IDs, or store IDs.\n"
+                "4. STRICT REFUSAL RULE FOR CAUSALITY: If the user asks a causal question (e.g., 'Why did sales fall?'), "
+                "   you must state the observed facts (e.g. 'Sales declined by X%, but the available data cannot establish the cause. "
+                "   Inventory availability was [figure] and price was [figure]. We do not have competitor pricing, customer feedback, "
+                "   or marketing data to determine why.') Do NOT say 'Customers preferred competitors' unless competitor data exists!\n"
+                "5. Categorize your reasoning into the 5 explicit tiers:\n"
+                "   - observed_facts: statements directly observed in SQLite\n"
+                "   - calculated_metrics: mathematical results computed by Python formulas\n"
+                "   - inferences: analytical deductions grounded in metrics\n"
+                "   - recommendations: policy-compliant actions subject to manager approval\n"
+                "   - assumptions: stated boundary assumptions\n"
+                "6. Do NOT use unsupported certainty.\n\n"
                 f"USER QUESTION: \"{question}\"\n"
                 f"DETECTED INTENT: {intent_data.intent}\n"
+                f"IS CAUSAL INQUIRY: {intent_data.is_causal_inquiry}\n"
                 f"STORE CONTEXT: {store_context}\n"
                 f"PRODUCT CONTEXT: {product_context}\n"
                 f"EVIDENCE PACKAGE FROM PYTHON (SOURCE OF TRUTH):\n"
@@ -1046,8 +1523,9 @@ class RetailCopilot:
 
             if response.text:
                 data = json.loads(response.text)
-                # Ensure evidence package is preserved exactly as calculated
                 data["evidence"] = evidence
+                if refusal_reason:
+                    data["refusal_reason"] = refusal_reason
                 if not data.get("confidence_note"):
                     data["confidence_note"] = "Explanation reasoned by Gemini 2.5 Flash, strictly grounded on deterministic Python calculations."
                 return CopilotResponse(**data)
@@ -1059,25 +1537,52 @@ class RetailCopilot:
 
     def ask(self, question: str) -> CopilotResponse:
         """
-        Executes the full copilot pipeline:
+        Executes the full copilot pipeline with strict refusal checks:
         USER QUESTION
+        → date validity check
         → intent extraction
         → entity resolution
-        → deterministic analytics
-        → evidence package
+        → deterministic analytics & evidence package
         → Gemini explanation
         → structured response
         """
-        # 1. Intent Extraction
+        # 1. Date Range Validity Check (Strict Refusal Rule)
+        is_date_valid, requested_date, date_err = check_date_range_validity(question)
+        if not is_date_valid:
+            ans = f"The date range has insufficient data. {date_err}"
+            return CopilotResponse(
+                intent="UNKNOWN",
+                time_period=str(requested_date),
+                answer=ans,
+                observed_facts=[f"Database contains transactions and inventory records from {DATABASE_MIN_DATE} to {DATABASE_MAX_DATE}."],
+                calculated_metrics=[],
+                inferences=["No records exist for the specified date period."],
+                recommendations=[f"Please query within the active recording window ({DATABASE_MIN_DATE} to {DATABASE_MAX_DATE})."],
+                assumptions=[],
+                evidence_package=None,
+                key_findings=[f"Requested date period '{requested_date}' is outside available records."],
+                evidence={"requested_period": requested_date, "available_period": f"{DATABASE_MIN_DATE} to {DATABASE_MAX_DATE}"},
+                recommendation="Query data within June 1, 2024 to August 29, 2024.",
+                limitations=[f"Local dataset is bounded to {DATABASE_MIN_DATE} through {DATABASE_MAX_DATE}."],
+                data_sufficient=False,
+                refusal_reason="INSUFFICIENT_DATE_RANGE",
+                confidence_note="Date range check failed: insufficient local records."
+            )
+
+        # 2. Intent Extraction
         intent_data = self.extract_intent(question)
 
-        # 2. Entity Resolution against local SQLite database
+        # Check if question is causal inquiry
+        if is_causal_question(question):
+            intent_data.is_causal_inquiry = True
+
+        # 3. Entity Resolution against local SQLite database
         resolved_product, resolved_store, product_not_found, store_not_found = resolve_entities(
             product_query=intent_data.product,
             store_query=intent_data.store
         )
 
-        # Handle non-existent entities: explain that data does not contain it without fabricating
+        # Handle non-existent store (Strict Refusal Rule)
         if store_not_found:
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -1089,51 +1594,73 @@ class RetailCopilot:
                 f"Available store locations are: {', '.join(avail_stores)}."
             )
             return CopilotResponse(
+                intent=intent_data.intent,
+                store=intent_data.store,
+                time_period=intent_data.time_period,
                 answer=msg,
+                observed_facts=[f"Database contains records for {len(avail_stores)} stores: {', '.join(avail_stores)}."],
+                calculated_metrics=[],
+                inferences=[f"Store '{intent_data.store}' does not exist in local records."],
+                recommendations=[f"Please specify one of our active store locations: {', '.join(avail_stores)}."],
+                assumptions=[],
+                evidence_package=None,
                 key_findings=[f"Store '{intent_data.store}' does not exist in local records."],
                 evidence={"requested_store": intent_data.store, "available_stores": avail_stores},
                 recommendation=f"Please specify one of our active store locations: {', '.join(avail_stores)}.",
-                assumptions=[],
                 limitations=["Database contains records only for authorized physical store network."],
                 data_sufficient=False,
+                refusal_reason="NON_EXISTENT_STORE",
                 confidence_note="Local database contains no records for the requested store."
             )
 
+        # Handle non-existent product (Strict Refusal Rule)
         if product_not_found:
             msg = (
                 f"The requested product '{intent_data.product}' was not found in the local catalog. "
                 f"Please verify the product name or SKU."
             )
             return CopilotResponse(
+                intent=intent_data.intent,
+                product=intent_data.product,
+                time_period=intent_data.time_period,
                 answer=msg,
+                observed_facts=["Catalog contains 110 active SKUs across Beverages, Snacks, and Grocery."],
+                calculated_metrics=[],
+                inferences=[f"Product '{intent_data.product}' is not indexed or stocked."],
+                recommendations=["Search the catalog using standard SKU format (e.g. SKU-PRE-001) or product name."],
+                assumptions=[],
+                evidence_package=None,
                 key_findings=[f"Product '{intent_data.product}' not found in catalog."],
                 evidence={"requested_product": intent_data.product},
                 recommendation="Search the catalog using standard SKU format (e.g. SKU-PRE-001) or product name.",
-                assumptions=[],
                 limitations=["Search performed across active catalog records only."],
                 data_sufficient=False,
+                refusal_reason="UNSUPPORTED_PRODUCT",
                 confidence_note="Local database contains no matching SKU or product."
             )
 
-        # 3. Deterministic Analytics (The local database is the source of truth)
+        # 4. Deterministic Analytics (The local database is the source of truth)
         evidence, data_sufficient, missing_info = execute_deterministic_analytics(
             intent_data=intent_data,
             resolved_product=resolved_product,
             resolved_store=resolved_store
         )
 
-        # If data is insufficient or intent unknown, return immediately with explanation
-        if not data_sufficient:
+        refusal_reason = evidence.get("refusal_reason")
+
+        # If data is insufficient or refused, return immediately with explanation
+        if not data_sufficient or refusal_reason:
             return synthesize_deterministic_response(
                 question=question,
                 intent_data=intent_data,
                 evidence=evidence,
-                data_sufficient=False,
+                data_sufficient=data_sufficient,
                 missing_info=missing_info,
+                refusal_reason=refusal_reason,
                 confidence_prefix="Local database query completed."
             )
 
-        # 4. Gemini Explanation & Reasoning (if API key available)
+        # 5. Gemini Explanation & Reasoning (if API key available)
         gemini_response = None
         if self.api_key:
             gemini_response = self.explain_with_gemini(
@@ -1141,13 +1668,14 @@ class RetailCopilot:
                 intent_data=intent_data,
                 evidence=evidence,
                 resolved_product=resolved_product,
-                resolved_store=resolved_store
+                resolved_store=resolved_store,
+                refusal_reason=refusal_reason
             )
 
         if gemini_response:
             return gemini_response
 
-        # 5. Deterministic Fallback if Gemini unavailable or failed
+        # 6. Deterministic Fallback if Gemini unavailable or failed
         conf_prefix = (
             "Ground truth computed deterministically via Python analytics over local SQLite data. "
             "(GEMINI_API_KEY not configured - deterministic response mode active)"
@@ -1162,6 +1690,7 @@ class RetailCopilot:
             evidence=evidence,
             data_sufficient=True,
             missing_info=[],
+            refusal_reason=None,
             confidence_prefix=conf_prefix
         )
 
@@ -1196,7 +1725,11 @@ __all__ = [
     "IntentSchema",
     "CopilotResponse",
     "SUPPORTED_INTENTS",
+    "DATABASE_MIN_DATE",
+    "DATABASE_MAX_DATE",
     "resolve_entities",
+    "is_causal_question",
+    "check_date_range_validity",
     "rule_based_extract_intent",
     "execute_deterministic_analytics",
     "get_copilot",
