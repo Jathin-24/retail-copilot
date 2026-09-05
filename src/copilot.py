@@ -1984,7 +1984,7 @@ class RetailCopilot:
                 product=intent_data.product,
                 time_period=intent_data.time_period,
                 answer=msg,
-                observed_facts=["Catalog contains 110 active SKUs across Beverages, Snacks, and Grocery."],
+                observed_facts=["Catalog contains 108 active SKUs across Beverages, Snacks, and Grocery."],
                 calculated_metrics=[],
                 inferences=[f"Product '{intent_data.product}' is not indexed or stocked."],
                 recommendations=["Search the catalog using standard SKU format (e.g. SKU-PRE-001) or product name."],
