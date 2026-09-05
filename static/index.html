@@ -3,1360 +3,523 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Retail - Sales and Inventory Copilot</title>
+  <title>Retail Copilot — Daily Store View</title>
   <style>
     :root {
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      --primary: #2563eb;
-      --primary-light: #eff6ff;
-      --success: #16a34a;
-      --success-light: #f0fdf4;
-      --badge-bg: #f1f5f9;
-      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --ink: #1e293b;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --blue: #2563eb;
+      --blue-bg: #eff6ff;
+      --green: #15803d;
+      --green-bg: #dcfce7;
+      --amber: #b45309;
+      --amber-bg: #fef3c7;
+      --red: #b91c1c;
+      --red-bg: #fee2e2;
+      --radius: 14px;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: var(--font-family);
-      line-height: 1.6;
-      padding: 32px 20px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.55;
+      padding: 24px 16px 60px;
     }
 
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-    }
+    .wrap { max-width: 760px; margin: 0 auto; }
 
     header {
-      margin-bottom: 36px;
-      padding-bottom: 24px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .badge {
-      display: inline-block;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      padding: 4px 10px;
-      border-radius: 6px;
-      background: var(--badge-bg);
-      color: var(--text-muted);
-      margin-bottom: 12px;
-      border: 1px solid var(--border);
-    }
-
-    h1 {
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: var(--text);
-      letter-spacing: -0.02em;
-      margin-bottom: 8px;
-    }
-
-    .subtitle {
-      font-size: 1.1rem;
-      color: var(--text-muted);
-      max-width: 720px;
-    }
-
-    .status-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px 24px;
-      margin-bottom: 28px;
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-    }
-
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 0 4px var(--success-light);
-    }
-
-    .status-text {
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-
-    .api-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--primary);
-      text-decoration: none;
-      background: var(--primary-light);
-      padding: 6px 14px;
-      border-radius: 6px;
-      transition: background 0.15s;
-    }
-
-    .api-link:hover {
-      background: #dbeafe;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    }
-
-    h2 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 16px;
-      color: var(--text);
-    }
-
-    .principles-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-top: 12px;
-    }
-
-    @media (max-width: 640px) {
-      .principles-grid {
-        grid-template-columns: 1fr;
-      }
-      .status-card {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-      }
-    }
-
-    .principle-box {
-      background: var(--badge-bg);
-      padding: 16px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
-
-    .principle-title {
-      font-size: 0.9rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-      color: var(--text);
-    }
-
-    .principle-desc {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    .modules-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       gap: 12px;
-      margin-top: 14px;
+      margin-bottom: 28px;
     }
 
-    .module-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 12px;
-      background: #fafafa;
-      border: 1px solid var(--border);
-      border-radius: 8px;
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-logo {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 22px;
+      display: flex; align-items: center; justify-content: center;
     }
 
-    .module-tag {
-      font-size: 0.75rem;
-      font-family: monospace;
+    h1 { font-size: 1.45rem; font-weight: 800; letter-spacing: -0.01em; }
+    .tagline { font-size: 0.85rem; color: var(--muted); }
+
+    .status-pill {
+      font-size: 0.78rem;
       font-weight: 700;
-      background: #e2e8f0;
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--muted);
       white-space: nowrap;
     }
+    .status-pill.live { color: var(--green); border-color: #bbf7d0; background: var(--green-bg); }
+    .status-pill.standby { color: var(--amber); border-color: #fcd34d; background: var(--amber-bg); }
 
-    .module-info {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-    }
+    section { margin-bottom: 32px; }
 
-    .module-name {
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 2px;
-    }
-
-    /* Copilot Chat UI */
-    .copilot-card {
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 32px;
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-    }
-
-    .copilot-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .copilot-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #0f172a;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .copilot-status-badge {
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      background: #eff6ff;
-      color: #2563eb;
-      border: 1px solid #bfdbfe;
-    }
-
-    .pill-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .prompt-pill {
-      font-size: 0.8rem;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 20px;
-      padding: 6px 14px;
-      cursor: pointer;
-      color: #334155;
-      transition: all 0.15s ease;
-    }
-
-    .prompt-pill:hover {
-      background: #eff6ff;
-      color: #2563eb;
-      border-color: #93c5fd;
-      transform: translateY(-1px);
-    }
-
-    .chat-input-row {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-
-    .chat-input {
-      flex: 1;
-      padding: 12px 16px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-
-    .chat-input:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-    }
-
-    .chat-btn {
-      background: #2563eb;
-      color: #ffffff;
-      border: none;
-      border-radius: 10px;
-      padding: 0 20px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .chat-btn:hover {
-      background: #1d4ed8;
-    }
-
-    .chat-btn:disabled {
-      background: #94a3b8;
-      cursor: not-allowed;
-    }
-
-    .response-box {
-      display: none;
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
-      border-radius: 14px;
-      padding: 24px;
-      margin-top: 20px;
-      box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05);
-    }
-
-    .response-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    /* Refusal & Qualification Banner */
-    .refusal-banner {
-      display: none;
-      background: #fff1f2;
-      border: 1px solid #fecdd3;
-      border-left: 5px solid #e11d48;
-      border-radius: 8px;
-      padding: 14px 18px;
-      margin-bottom: 18px;
-    }
-
-    .refusal-badge {
-      display: inline-block;
-      font-size: 0.72rem;
+    h2 {
+      font-size: 1.1rem;
       font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      background: #e11d48;
-      color: #ffffff;
-      padding: 2px 8px;
-      border-radius: 4px;
-      margin-bottom: 6px;
-    }
-
-    .refusal-title {
-      font-size: 0.92rem;
-      font-weight: 700;
-      color: #9f1239;
       margin-bottom: 4px;
     }
+    .muted { font-size: 0.88rem; color: var(--muted); }
 
-    .refusal-explanation {
-      font-size: 0.86rem;
-      color: #881337;
-      line-height: 1.5;
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin: 16px 0 16px;
     }
 
-    .response-answer {
-      font-size: 1.02rem;
-      color: #0f172a;
-      white-space: pre-wrap;
-      margin-bottom: 20px;
-      line-height: 1.65;
-      font-weight: 500;
-      padding: 14px 16px;
-      background: #f8fafc;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
+    .kpi {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .kpi-label { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+    .kpi-value { font-size: 1.7rem; font-weight: 800; margin-top: 2px; }
+    .kpi-value.red { color: var(--red); }
+    .kpi-value.amber { color: var(--amber); }
+
+    .alert {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
     }
 
-    /* 5-Tier Epistemic Visual System */
-    .epistemic-container {
+    .alert-top {
       display: flex;
-      flex-direction: column;
-      gap: 14px;
-      margin-bottom: 20px;
-    }
-
-    .tier-card {
-      border-radius: 10px;
-      padding: 16px 18px;
-      border: 1px solid #e2e8f0;
-      transition: box-shadow 0.2s;
-    }
-
-    .tier-card:hover {
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-
-    .tier-header {
-      display: flex;
-      align-items: center;
+      align-items: flex-start;
+      justify-content: space-between;
       gap: 10px;
-      margin-bottom: 10px;
     }
 
-    .tier-badge {
+    .alert-title { font-size: 0.95rem; font-weight: 700; }
+    .alert-where { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+
+    .chip {
       font-size: 0.72rem;
       font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      padding: 3px 8px;
-      border-radius: 4px;
-    }
-
-    .tier-desc {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    .tier-list {
-      list-style-type: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    .tier-list li {
-      position: relative;
-      padding-left: 18px;
-      font-size: 0.88rem;
-      color: #334155;
-      margin-bottom: 6px;
-      line-height: 1.5;
-    }
-
-    .tier-list li::before {
-      content: "•";
-      position: absolute;
-      left: 6px;
-      font-weight: bold;
-    }
-
-    /* 1. Observed Fact (Blue) */
-    .tier-fact {
-      background: #eff6ff;
-      border-left: 4px solid #2563eb;
-      border-color: #bfdbfe;
-    }
-    .badge-fact {
-      background: #2563eb;
-      color: #ffffff;
-    }
-    .tier-fact .tier-list li::before {
-      color: #2563eb;
-    }
-
-    /* 2. Calculated Metric (Purple) */
-    .tier-metric {
-      background: #f5f3ff;
-      border-left: 4px solid #7c3aed;
-      border-color: #ddd6fe;
-    }
-    .badge-metric {
-      background: #7c3aed;
-      color: #ffffff;
-    }
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 10px;
-      margin-top: 6px;
-    }
-    .metric-box {
-      background: #ffffff;
-      border: 1px solid #e9d5ff;
-      border-radius: 8px;
-      padding: 10px 12px;
-    }
-    .metric-name {
-      font-size: 0.76rem;
-      font-weight: 700;
-      text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: #6b21a8;
-      margin-bottom: 2px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
     }
-    .metric-value-row {
-      font-size: 1.15rem;
-      font-weight: 800;
-      color: #4c1d95;
-    }
-    .metric-unit {
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: #7c3aed;
-      margin-left: 4px;
-    }
-    .metric-formula {
-      font-size: 0.74rem;
-      font-family: monospace;
-      color: #64748b;
-      margin-top: 4px;
-      background: #faf5ff;
-      padding: 2px 6px;
-      border-radius: 4px;
-      border: 1px dashed #e9d5ff;
-      overflow-x: auto;
-    }
+    .chip.CRITICAL { background: var(--red-bg); color: var(--red); }
+    .chip.HIGH { background: #ffedd5; color: #c2410c; }
+    .chip.MEDIUM { background: var(--amber-bg); color: var(--amber); }
+    .chip.LOW { background: #f1f5f9; color: var(--muted); }
 
-    /* 3. Inference (Amber) */
-    .tier-inference {
-      background: #fffbeb;
-      border-left: 4px solid #d97706;
-      border-color: #fde68a;
+    .action {
+      margin-top: 12px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 12px 14px;
     }
-    .badge-inference {
-      background: #d97706;
-      color: #ffffff;
-    }
-    .tier-inference .tier-list li::before {
-      color: #d97706;
-    }
+    .action-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--green); letter-spacing: 0.04em; }
+    .action-text { font-size: 0.9rem; color: var(--ink); font-weight: 600; }
 
-    /* 4. Recommendation (Green) */
-    .tier-rec {
-      background: #ecfdf5;
-      border-left: 4px solid #059669;
-      border-color: #a7f3d0;
-    }
-    .badge-rec {
-      background: #059669;
-      color: #ffffff;
-    }
-    .rec-body {
-      font-size: 0.92rem;
-      color: #065f46;
-      line-height: 1.55;
-      margin-bottom: 12px;
-    }
-    .rec-policy-note {
-      font-size: 0.78rem;
-      color: #047857;
-      font-style: italic;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .inspect-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: #ffffff;
-      border: 1px solid #10b981;
-      color: #065f46;
+    .why-btn {
+      margin-top: 10px;
+      background: none;
+      border: none;
+      color: var(--blue);
       font-size: 0.82rem;
       font-weight: 700;
-      padding: 6px 14px;
-      border-radius: 6px;
       cursor: pointer;
-      transition: all 0.15s ease;
+      padding: 2px 0;
     }
-    .inspect-btn:hover {
-      background: #059669;
-      color: #ffffff;
-      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.2);
-    }
+    .why-btn:hover { text-decoration: underline; }
 
-    /* 5. Assumption (Slate) */
-    .tier-assumption {
-      background: #f8fafc;
-      border-left: 4px solid #64748b;
-      border-color: #cbd5e1;
-    }
-    .badge-assumption {
-      background: #64748b;
-      color: #ffffff;
-    }
-    .tier-assumption .tier-list li::before {
-      color: #64748b;
-    }
-
-    /* Interactive Evidence Inspector Modal / Drawer */
-    .evidence-inspector {
-      background: #ffffff;
-      border: 2px solid #3b82f6;
-      border-radius: 12px;
-      padding: 18px 22px;
-      margin-top: 16px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-      animation: fadeIn 0.2s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .inspector-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .inspector-title {
-      font-size: 1.05rem;
-      font-weight: 800;
-      color: #1e3a8a;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .inspector-close-btn {
-      background: #f1f5f9;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 700;
-      padding: 4px 10px;
-      font-size: 0.8rem;
+    .why-body {
+      display: none;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--line);
+      font-size: 0.85rem;
       color: #475569;
+    }
+    .why-body.open { display: block; }
+    .why-body p { margin-bottom: 6px; }
+    .why-body p:last-child { margin-bottom: 0; }
+    .why-body strong { color: var(--ink); }
+
+    .ask-box {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 14px; }
+
+    .chip-btn {
+      font-size: 0.82rem;
+      background: var(--blue-bg);
+      color: var(--blue);
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      padding: 7px 14px;
+      cursor: pointer;
+      font-weight: 600;
       transition: background 0.15s;
     }
-    .inspector-close-btn:hover {
-      background: #e2e8f0;
-      color: #0f172a;
+    .chip-btn:hover { background: #dbeafe; }
+
+    .ask-row { display: flex; gap: 10px; }
+
+    #q {
+      flex: 1;
+      padding: 13px 16px;
+      font-size: 1rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      outline: none;
+      min-width: 0;
     }
-    .inspector-meta-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-      background: #f8fafc;
-      padding: 12px 14px;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-      font-size: 0.84rem;
-    }
-    .meta-item strong {
-      color: #475569;
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      display: block;
-      margin-bottom: 2px;
-    }
-    .meta-item span {
-      color: #0f172a;
-      font-weight: 600;
-    }
-    .inspector-section-title {
-      font-size: 0.82rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #1e293b;
-      margin: 14px 0 6px 0;
-    }
-    .inspector-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.82rem;
-      margin-bottom: 12px;
-    }
-    .inspector-table th {
-      background: #f1f5f9;
-      color: #334155;
-      text-align: left;
-      padding: 8px 10px;
+    #q:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+
+    #ask-btn {
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 0 22px;
+      font-size: 1rem;
       font-weight: 700;
-      border: 1px solid #e2e8f0;
+      cursor: pointer;
     }
-    .inspector-table td {
-      padding: 8px 10px;
-      border: 1px solid #e2e8f0;
-      color: #1e293b;
+    #ask-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    #ask-btn:hover:not(:disabled) { background: #1d4ed8; }
+
+    #result { margin-top: 16px; display: none; }
+
+    .refusal {
+      background: var(--red-bg);
+      border: 1px solid #fecaca;
+      border-left: 5px solid var(--red);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+      color: #7f1d1d;
     }
-    .inspector-table tr:nth-child(even) td {
+    .refusal strong { display: block; font-size: 0.9rem; color: #991b1b; margin-bottom: 4px; }
+
+    .answer {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px 20px;
+      font-size: 1rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    details.fold {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      margin-top: 12px;
+      padding: 12px 16px;
+    }
+    details.fold summary {
+      cursor: pointer;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--blue);
+    }
+    details.fold .fold-body { margin-top: 10px; font-size: 0.87rem; color: #475569; }
+    details.fold .fold-body ul { padding-left: 18px; }
+    details.fold .fold-body li { margin-bottom: 4px; }
+    details.fold .fold-body .metric {
+      margin-bottom: 8px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    details.fold .fold-body .metric strong { display: block; font-size: 0.82rem; }
+    details.fold .fold-body .metric span { font-size: 1.05rem; font-weight: 800; color: var(--ink); }
+
+    .confidence { font-size: 0.78rem; color: var(--muted); margin-top: 10px; }
+
+    .tech {
+      margin-top: 40px;
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 14px 18px;
       background: #fbfcfe;
     }
-    .limitations-box {
-      background: #fffbeb;
-      border: 1px solid #fef3c7;
-      border-radius: 6px;
-      padding: 10px 14px;
-      font-size: 0.82rem;
-      color: #92400e;
-      margin-bottom: 14px;
-    }
+    .tech summary { cursor: pointer; font-size: 0.85rem; font-weight: 700; color: var(--muted); }
+    .tech-body { margin-top: 12px; font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+    .tech-body ul { padding-left: 18px; margin-top: 8px; }
+    .tech-body code { background: #f1f5f9; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; font-size: 0.75rem; }
 
-    .evidence-pre {
-      background: #0f172a;
-      color: #f8fafc;
-      padding: 12px;
-      border-radius: 8px;
-      overflow-x: auto;
-      margin-top: 8px;
-      font-family: monospace;
-      font-size: 0.78rem;
-    }
+    footer { margin-top: 36px; text-align: center; font-size: 0.78rem; color: var(--muted); }
 
-    .footer-note {
-      font-size: 0.75rem;
-      color: #94a3b8;
-      margin-top: 14px;
-      border-top: 1px dashed #e2e8f0;
-      padding-top: 8px;
-    }
-
-    footer {
-      margin-top: 40px;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      text-align: center;
+    @media (max-width: 480px) {
+      header { flex-direction: column; align-items: flex-start; }
+      .ask-row { flex-direction: column; }
+      #ask-btn { padding: 12px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="wrap">
     <header>
-      <div class="badge">TRACK_ID: PS03 • Fast-Track Architecture</div>
-      <h1>Retail: Sales &amp; Inventory Copilot</h1>
-      <p class="subtitle">
-        Intelligent decision support for multi-store retail managers. Built on deterministic Python business logic and Gemini-powered reasoning.
-      </p>
+      <div class="brand">
+        <div class="brand-logo">🛒</div>
+        <div>
+          <h1>Retail Copilot</h1>
+          <p class="tagline">Your store's daily health, in plain language</p>
+        </div>
+      </div>
+      <span class="status-pill" id="status-pill">Checking…</span>
     </header>
 
-    <div class="status-card">
-      <div class="status-indicator">
-        <div class="dot" id="health-dot"></div>
-        <div>
-          <div class="status-text" id="health-label">Checking service health...</div>
-          <div style="font-size: 0.8rem; color: var(--text-muted);" id="health-details">Connecting to /api/health</div>
-        </div>
-      </div>
-      <div style="display: flex; gap: 12px;">
-        <a href="/api/copilot/status" target="_blank" class="api-link" style="font-size: 0.85rem;">Copilot Status &rarr;</a>
-        <a href="/api/health" target="_blank" class="api-link" style="font-size: 0.85rem;">View GET /api/health &rarr;</a>
-      </div>
-    </div>
+    <main>
+      <!-- TODAY'S PRIORITIES -->
+      <section>
+        <h2>Today's priorities</h2>
+        <p class="muted">The top items that need your attention across all stores.</p>
+        <div class="kpis" id="kpis"></div>
+        <div id="alert-list"></div>
+      </section>
 
-    <!-- ATTENTION TODAY COMMAND CENTER -->
-    <div class="card">
-      <h2>⚡ Attention Today Command Center</h2>
-      <div class="attention-kpis" id="attention-kpis">
-        <!-- KPIs will be injected here -->
-      </div>
-      <div class="attention-list" id="attention-list">
-        <!-- Attention items will be injected here -->
-      </div>
-    </div>
+      <!-- ASK THE ASSISTANT -->
+      <section>
+        <div class="ask-box">
+          <h2>Ask the assistant</h2>
+          <p class="muted" id="assist-mode">Ask anything about stock, sales, or store performance.</p>
 
-    <!-- INTERACTIVE GEMINI COPILOT CONSOLE -->
-    <div class="copilot-card">
-      <div class="copilot-header">
-        <div class="copilot-title">
-          <span>🤖 Retail Analytics Copilot</span>
-        </div>
-        <div class="copilot-status-badge" id="copilot-mode-badge">Initializing Copilot...</div>
-      </div>
-
-      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px;">
-        Ask questions in plain English. Python executes all mathematical calculations; Gemini explains the structured evidence with zero numerical hallucinations.
-      </p>
-
-      <div class="pill-container">
-        <button class="prompt-pill" onclick="setQuery('What is running out?')">🔥 What is running out?</button>
-        <button class="prompt-pill" onclick="setQuery('Why did sales fall?')">❓ Why did sales fall? (Causal Refusal)</button>
-        <button class="prompt-pill" onclick="setQuery('What were sales in 2026?')">📅 Sales in 2026 (Out of Range)</button>
-        <button class="prompt-pill" onclick="setQuery('How did PlayStation 5 perform?')">🎮 PlayStation 5 (Unsupported)</button>
-        <button class="prompt-pill" onclick="setQuery('Which stores are performing well?')">📊 Which stores are performing well?</button>
-        <button class="prompt-pill" onclick="setQuery('What is running out in Hyderabad?')">📍 Running out in Hyderabad?</button>
-        <button class="prompt-pill" onclick="setQuery('What is overstocked across stores?')">📦 Overstocked items?</button>
-        <button class="prompt-pill" onclick="setQuery('What products are slow moving?')">⏳ Show slow movers</button>
-      </div>
-
-      <div class="chat-input-row">
-        <input 
-          type="text" 
-          id="copilot-query-input" 
-          class="chat-input" 
-          placeholder="Type your retail inquiry (e.g. 'Why did sales fall?' or 'What is running out?')..." 
-          onkeydown="if (event.key === 'Enter') submitCopilotQuery()"
-        />
-        <button id="copilot-send-btn" class="chat-btn" onclick="submitCopilotQuery()">
-          Ask Copilot
-        </button>
-      </div>
-
-      <div id="copilot-response" class="response-box">
-        <div class="response-header">
-          <span style="font-size: 0.82rem; font-weight: 700; color: #1e293b;" id="res-badge-intent">INTENT: -</span>
-          <span style="font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 4px;" id="res-badge-sufficient"></span>
-        </div>
-
-        <!-- STRICT REFUSAL & QUALIFICATION ALERT BANNER -->
-        <div id="res-refusal-banner" class="refusal-banner">
-          <span class="refusal-badge" id="refusal-badge-tag">STRICT REFUSAL</span>
-          <div class="refusal-title" id="refusal-title">Unestablished Causality / Missing External Data</div>
-          <div class="refusal-explanation" id="refusal-explanation">
-            Local database transaction records cannot establish the root cause without external competitor pricing, customer feedback, or marketing campaigns.
-          </div>
-        </div>
-
-        <div class="response-answer" id="res-answer"></div>
-
-        <!-- 5-TIER EPISTEMIC VISUAL SYSTEM -->
-        <div class="epistemic-container" id="epistemic-container">
-          <!-- 1. OBSERVED FACT (Blue) -->
-          <div class="tier-card tier-fact" id="tier-fact-wrap">
-            <div class="tier-header">
-              <span class="tier-badge badge-fact">OBSERVED FACT</span>
-              <span class="tier-desc">Directly recorded in database ledger (zero speculation)</span>
-            </div>
-            <ul class="tier-list" id="res-facts-list"></ul>
+          <div class="chips">
+            <button class="chip-btn" onclick="ask('What is running out across all stores?')">Stock running low?</button>
+            <button class="chip-btn" onclick="ask('What is overstocked?')">Too much stock?</button>
+            <button class="chip-btn" onclick="ask('Which products are not selling?')">Not selling well?</button>
+            <button class="chip-btn" onclick="ask('Which stores are performing well?')">Best performing stores?</button>
+            <button class="chip-btn" onclick="ask('What is the damaged goods policy?')">Return / damaged goods policy?</button>
           </div>
 
-          <!-- 2. CALCULATED METRIC (Purple) -->
-          <div class="tier-card tier-metric" id="tier-metric-wrap">
-            <div class="tier-header">
-              <span class="tier-badge badge-metric">CALCULATED METRIC</span>
-              <span class="tier-desc">Deterministic Python mathematical computations &amp; formulas</span>
-            </div>
-            <div class="metrics-grid" id="res-metrics-grid"></div>
+          <div class="ask-row">
+            <input type="text" id="q" placeholder="Type your question… (e.g. “What is running out in Hyderabad?”)"
+                   onkeydown="if (event.key === 'Enter') ask()" />
+            <button id="ask-btn" onclick="ask()">Ask</button>
           </div>
 
-          <!-- 3. INFERENCE (Amber) -->
-          <div class="tier-card tier-inference" id="tier-inference-wrap">
-            <div class="tier-header">
-              <span class="tier-badge badge-inference">INFERENCE</span>
-              <span class="tier-desc">Analytical deductions grounded strictly in metrics</span>
-            </div>
-            <ul class="tier-list" id="res-inferences-list"></ul>
-          </div>
-
-          <!-- 4. RECOMMENDATION (Green) -->
-          <div class="tier-card tier-rec" id="tier-rec-wrap">
-            <div class="tier-header">
-              <span class="tier-badge badge-rec">RECOMMENDATION</span>
-              <span class="tier-desc">Actionable proposals • Requires Manager Confirmation</span>
-            </div>
-            <div class="rec-body" id="res-rec-content"></div>
-            <div class="rec-policy-note">
-              <span>⚠️ Action Policy:</span> Must be reviewed and approved by store manager prior to purchase order creation.
-            </div>
-            <button class="inspect-btn" onclick="toggleEvidenceInspector()">
-              🔍 Inspect Underlying Evidence Behind Recommendation
-            </button>
-          </div>
-
-          <!-- 5. ASSUMPTION (Slate) -->
-          <div class="tier-card tier-assumption" id="tier-assumption-wrap">
-            <div class="tier-header">
-              <span class="tier-badge badge-assumption">ASSUMPTION</span>
-              <span class="tier-desc">Operational assumptions, SLAs, and dataset boundaries</span>
-            </div>
-            <ul class="tier-list" id="res-assumptions-list"></ul>
-          </div>
-        </div>
-
-        <!-- 6. POLICY EVIDENCE (Retrieved Knowledge-Base Documents) -->
-        <details class="evidence-details" id="policy-evidence-section" style="display: none; margin-top: 14px; border: 1px solid #bae6fd; border-left: 4px solid #0284c7; border-radius: 10px; padding: 12px 16px; background: #f0f9ff;">
-          <summary style="font-size: 0.85rem; font-weight: 800; color: #075985; cursor: pointer;">📄 Policy Evidence (Retrieved Knowledge-Base Documents)</summary>
-          <div id="policy-evidence-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;"></div>
-        </details>
-
-        <!-- DOCUMENT RETRIEVAL UNAVAILABLE MUTED NOTICE -->
-        <div id="retrieval-unavailable-note" style="display: none; font-size: 0.8rem; color: #94a3b8; margin-top: 12px; line-height: 1.5;">
-          ⚠️ Document retrieval is unavailable — policy/procedure answers from the knowledge base are not available right now. Database analytics remain fully functional.
-        </div>
-
-        <!-- INTERACTIVE EVIDENCE INSPECTOR MODAL / EXPANDER -->
-        <div id="evidence-inspector" class="evidence-inspector" style="display: none;">
-          <div class="inspector-header">
-            <div class="inspector-title">
-              <span>🔍 Recommendation Evidence Inspector</span>
-            </div>
-            <button class="inspector-close-btn" onclick="toggleEvidenceInspector()">✕ Close Inspector</button>
-          </div>
-          <div class="inspector-body">
-            <div class="inspector-meta-row">
-              <div class="meta-item">
-                <strong>Source Datasets / Tables:</strong>
-                <span id="insp-sources">inventory.csv + sales.csv</span>
-              </div>
-              <div class="meta-item">
-                <strong>Target Entity:</strong>
-                <span id="insp-entity">Product &amp; Store</span>
-              </div>
-              <div class="meta-item">
-                <strong>Date Period Evaluated:</strong>
-                <span id="insp-period">Historical Recording Window</span>
-              </div>
-            </div>
-
-            <div class="inspector-section-title">Raw Database Values Used in Calculation</div>
-            <table class="inspector-table" id="insp-raw-table">
-              <thead><tr><th>Parameter</th><th>Raw Value</th><th>Origin</th></tr></thead>
-              <tbody id="insp-raw-tbody"></tbody>
-            </table>
-
-            <div class="inspector-section-title">Deterministic Calculations &amp; Formulas</div>
-            <table class="inspector-table" id="insp-calc-table">
-              <thead><tr><th>Metric Name</th><th>Calculated Value</th><th>Formula / Method</th></tr></thead>
-              <tbody id="insp-calc-tbody"></tbody>
-            </table>
-
-            <div class="inspector-section-title">Data Quality Checks &amp; Missing External Context</div>
-            <div class="limitations-box" id="insp-limitations"></div>
-
-            <details class="evidence-details" style="margin-top: 14px;">
-              <summary>View Complete JSON Evidence Payload for Audit</summary>
-              <pre class="evidence-pre" id="res-evidence"></pre>
+          <div id="result">
+            <div class="refusal" id="refusal" hidden></div>
+            <div class="answer" id="answer-text"></div>
+            <details class="fold" id="numbers-details">
+              <summary>Numbers behind this answer</summary>
+              <div class="fold-body" id="numbers-body"></div>
             </details>
+            <details class="fold" id="policy-details">
+              <summary>Based on our policy documents</summary>
+              <div class="fold-body" id="policy-body"></div>
+            </details>
+            <p class="confidence" id="confidence"></p>
           </div>
         </div>
+      </section>
+    </main>
 
-        <div class="footer-note" id="res-confidence"></div>
+    <!-- TECHNICAL DETAILS (for evaluators) -->
+    <details class="tech">
+      <summary>Technical details (for evaluators)</summary>
+      <div class="tech-body">
+        Deterministic Python analytics over a local SQLite database are the single source of truth; Gemini only
+        classifies intent and rephrases evidence, and never computes numbers. Answers are grounded via an explicit
+        evidence layer (observed facts → calculated metrics → inference → recommendation → assumption). Policy and
+        procedure questions are answered from a local embedding knowledge base
+        (<code>gemini-embedding-001</code>, cosine top-k, index committed in <code>data/retail.db</code>), cited as
+        POLICY EVIDENCE and kept separate from database analytics. Without a <code>GEMINI_API_KEY</code> the app runs
+        in a fully deterministic fallback mode.
+        <ul>
+          <li>REST API: <code>GET /api/health</code>, <code>GET /api/attention</code>, <code>POST /api/copilot/chat</code>, <code>GET /api/copilot/status</code>, <code>GET /api/analytics/*</code></li>
+          <li>Launch: <code>pip install -r requirements.txt</code> then <code>python app.py</code> (serves this page on port 8000)</li>
+          <li>Track: README first line <code>TRACK_ID=PS6</code>; app metadata <code>PS03</code></li>
+        </ul>
       </div>
-    </div>
-
-    <div class="card">
-      <h2>Architectural Foundations</h2>
-      <p style="font-size: 0.95rem; color: var(--text-muted);">
-        Strict separation of concerns ensures absolute numerical accuracy and zero hallucinations:
-      </p>
-      <div class="principles-grid">
-        <div class="principle-box">
-          <div class="principle-title">1. Deterministic Python Core</div>
-          <div class="principle-desc">
-            All aggregations, run-rates, margins, safety stock calculations, and anomaly detections are executed deterministically in Python using SQLite and Pandas.
-          </div>
-        </div>
-        <div class="principle-box">
-          <div class="principle-title">2. Grounded Gemini Reasoning</div>
-          <div class="principle-desc">
-            Gemini performs intent classification and explains calculated outputs. Gemini never calculates or invents numerical figures.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Module Boundaries</h2>
-      <p style="font-size: 0.95rem; color: var(--text-muted);">
-        The codebase is partitioned into isolated, modular domains:
-      </p>
-      <div class="modules-list">
-        <div class="module-item">
-          <div>
-            <span class="module-tag">database/</span>
-            <div class="module-name">Stores &amp; Inventory DB</div>
-            <div class="module-info">Local SQLite persistence with stores, products, inventory, and sales.</div>
-          </div>
-        </div>
-        <div class="module-item">
-          <div>
-            <span class="module-tag">analytics/</span>
-            <div class="module-name">Deterministic KPIs</div>
-            <div class="module-info">Sales velocity, product performance, and gross profit metrics.</div>
-          </div>
-        </div>
-        <div class="module-item">
-          <div>
-            <span class="module-tag">forecasting/</span>
-            <div class="module-name">Demand Run-Rate</div>
-            <div class="module-info">Days of supply projection and stockout risk runway modeling.</div>
-          </div>
-        </div>
-        <div class="module-item">
-          <div>
-            <span class="module-tag">anomaly/</span>
-            <div class="module-name">Anomaly Detection</div>
-            <div class="module-info">Statistical detection of sales spikes, sudden drops, and overstocks.</div>
-          </div>
-        </div>
-        <div class="module-item">
-          <div>
-            <span class="module-tag">recommendations/</span>
-            <div class="module-name">Action Engine</div>
-            <div class="module-info">Automated reordering, inter-store transfers, and priority actions.</div>
-          </div>
-        </div>
-        <div class="module-item">
-          <div>
-            <span class="module-tag">copilot/</span>
-            <div class="module-name">Gemini Reasoning</div>
-            <div class="module-info">Natural-language intent classification and grounded explanations.</div>
-          </div>
-        </div>
-        <div class="module-item">
-          <div>
-            <span class="module-tag">retrieval/</span>
-            <div class="module-name">Local Search</div>
-            <div class="module-info">Fast catalog and supplier metadata querying without external APIs.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Deterministic Analytics API Endpoints</h2>
-      <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 16px;">
-        Every analytical calculation is executed deterministically in Python using local SQLite data:
-      </p>
-      <div class="modules-list">
-        <a href="/api/copilot/query?question=What+is+running+out%3F" target="_blank" class="module-item" style="text-decoration: none; border-color: #93c5fd; background: #eff6ff;">
-          <div>
-            <span class="module-tag" style="background: #2563eb; color: #fff;">COPILOT</span>
-            <div class="module-name" style="color: #1d4ed8;">Copilot Query API</div>
-            <div class="module-info">Natural-language intent routing &amp; grounded explanation.</div>
-          </div>
-        </a>
-        <a href="/api/analytics/store-performance" target="_blank" class="module-item" style="text-decoration: none;">
-          <div>
-            <span class="module-tag">GET</span>
-            <div class="module-name">Store Performance</div>
-            <div class="module-info">Revenue, COGS, gross margins, and period-over-period growth.</div>
-          </div>
-        </a>
-        <a href="/api/analytics/product-performance?product_id=PRD-001&store_id=STR-001" target="_blank" class="module-item" style="text-decoration: none;">
-          <div>
-            <span class="module-tag">GET</span>
-            <div class="module-name">Product Performance</div>
-            <div class="module-info">Units sold, daily run-rate, ATV, and gross margin percent.</div>
-          </div>
-        </a>
-        <a href="/api/analytics/inventory-health" target="_blank" class="module-item" style="text-decoration: none;">
-          <div>
-            <span class="module-tag">GET</span>
-            <div class="module-name">Inventory Health</div>
-            <div class="module-info">Total units, valuation, 7d/30d ADS velocity, and runway.</div>
-          </div>
-        </a>
-        <a href="/api/analytics/inventory-turnover?product_id=PRD-001&store_id=STR-001" target="_blank" class="module-item" style="text-decoration: none;">
-          <div>
-            <span class="module-tag">GET</span>
-            <div class="module-name">Inventory Turnover</div>
-            <div class="module-info">COGS / average inventory cost and annualized turnover.</div>
-          </div>
-        </a>
-        <a href="/api/analytics/slow-movers" target="_blank" class="module-item" style="text-decoration: none;">
-          <div>
-            <span class="module-tag">GET</span>
-            <div class="module-name">Slow Movers</div>
-            <div class="module-info">Low velocity items with catalog age filtering &amp; audit evidence.</div>
-          </div>
-        </a>
-        <a href="/api/analytics/overstock" target="_blank" class="module-item" style="text-decoration: none;">
-          <div>
-            <span class="module-tag">GET</span>
-            <div class="module-name">Overstock Detection</div>
-            <div class="module-info">Days of inventory above target runway &amp; excess capital tied up.</div>
-          </div>
-        </a>
-        <a href="/api/analytics/stockout-risk?store_id=STR-001&product_id=PRD-004" target="_blank" class="module-item" style="text-decoration: none;">
-          <div>
-            <span class="module-tag">GET</span>
-            <div class="module-name">Stockout Risk Model</div>
-            <div class="module-info">Lead-time demand, safety stock, net position &amp; heuristic score.</div>
-          </div>
-        </a>
-        <a href="/api/analytics/anomalies" target="_blank" class="module-item" style="text-decoration: none;">
-          <div>
-            <span class="module-tag">GET</span>
-            <div class="module-name">Sales Anomalies</div>
-            <div class="module-info">Rolling baseline spikes and drops with statistical standard deviations.</div>
-          </div>
-        </a>
-        <a href="/api/analytics/data-quality" target="_blank" class="module-item" style="text-decoration: none;">
-          <div>
-            <span class="module-tag">GET</span>
-            <div class="module-name">Data Quality Audit</div>
-            <div class="module-info">Negative stock, impossible values, jumps, and duplicate checks.</div>
-          </div>
-        </a>
-      </div>
-    </div>
+    </details>
 
     <footer>
-      Retail - Sales and Inventory Copilot &bull; Single Command Startup: <code>python app.py</code>
+      Retail Copilot · <code>python app.py</code> from the repository root
     </footer>
   </div>
 
   <script>
+    const ALERT_PLAIN = {
+      LIKELY_STOCKOUT: 'Stock running low',
+      SLOW_MOVING: 'Not selling well',
+      OVERSTOCK: 'Too much stock on hand',
+      SALES_SPIKE: 'Sales jumped',
+      SALES_DROP: 'Sales dropped',
+      SUPPLIER_DELAY: 'Supplier delivery delay',
+      DATA_QUALITY: 'Data needs a check'
+    };
+
     async function checkHealth() {
       try {
         const res = await fetch('/api/health');
-        if (!res.ok) throw new Error('Health check returned status ' + res.status);
+        if (!res.ok) throw new Error('bad status');
         const data = await res.json();
-        document.getElementById('health-label').textContent = 'Copilot Service Active (' + data.status + ')';
-        document.getElementById('health-details').textContent = data.project + ' • Track: ' + data.track_id;
-        document.getElementById('health-dot').style.background = '#16a34a';
-      } catch (err) {
-        document.getElementById('health-label').textContent = 'Service Standby';
-        document.getElementById('health-details').textContent = err.message;
-        document.getElementById('health-dot').style.background = '#eab308';
+        const pill = document.getElementById('status-pill');
+        pill.textContent = '● Service live';
+        pill.className = 'status-pill live';
+        document.getElementById('assist-mode').textContent =
+          (data.project || 'Retail Copilot') + ' — stock, sales, and store performance assistant.';
+      } catch (e) {
+        const pill = document.getElementById('status-pill');
+        pill.textContent = '● Checking…';
+        pill.className = 'status-pill standby';
       }
     }
 
     async function checkCopilotStatus() {
       try {
         const res = await fetch('/api/copilot/status');
-        if (res.ok) {
-          const data = await res.json();
-          const badge = document.getElementById('copilot-mode-badge');
-          if (data.gemini_api_key_configured) {
-            badge.textContent = '● Gemini Live Reasoning (' + data.model + ')';
-            badge.style.background = '#f0fdf4';
-            badge.style.color = '#16a34a';
-            badge.style.borderColor = '#bbf7d0';
-          } else {
-            badge.textContent = '● Deterministic Grounded Mode (No API Key)';
-            badge.style.background = '#fefce8';
-            badge.style.color = '#ca8a04';
-            badge.style.borderColor = '#fef08a';
-          }
-        }
-      } catch (e) {
-        console.warn('Could not load copilot status', e);
-      }
+        if (!res.ok) return;
+        const data = await res.json();
+        const mode = document.getElementById('assist-mode');
+        mode.textContent = data.gemini_api_key_configured
+          ? 'Assistant is live with AI reasoning (' + (data.model || '') + '). Ask anything about stock, sales, or stores.'
+          : 'Assistant running in offline mode (no AI key configured). Analytics still work and answers stay grounded in the data.';
+      } catch (e) { /* keep default copy */ }
     }
 
-    let attentionItems = [];
-
-    function renderEvidence(ev) {
-      if (!ev) return '';
-      const rows = [];
-      const li = (label, value, unit) => `<li><strong>${label}:</strong> ${value}${unit ? ' ' + unit : ''}</li>`;
-      if (ev.metric) rows.push(li('Metric', ev.metric));
-      if (ev.value !== undefined && ev.value !== null) rows.push(li('Value', ev.value, ev.unit));
-      if (ev.calculation) rows.push(li('Calculation', ev.calculation));
-      if (ev.period) rows.push(li('Period', ev.period));
-      if (ev.source) rows.push(li('Source', ev.source));
-      if (ev.raw_values && typeof ev.raw_values === 'object') {
-        const raw = Object.entries(ev.raw_values)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(', ');
-        rows.push(`<li><strong>Raw data:</strong> ${raw}</li>`);
-      }
-      return `<ul style="margin: 0 0 12px 0; padding-left: 18px; color: #334155; font-size: 0.85rem;">${rows.join('')}</ul>`;
-    }
-
-    async function fetchAttentionToday() {
+    async function fetchToday() {
       try {
         const res = await fetch('/api/attention?limit=5');
-        if (!res.ok) throw new Error('Failed to fetch attention data');
+        if (!res.ok) throw new Error('Failed to load attention data');
         const data = await res.json();
+        renderKpis(data.summary_metrics || {});
+        renderAlerts(data.top_attention_items || []);
+      } catch (e) {
+        document.getElementById('alert-list').innerHTML =
+          '<p class="muted">Could not load today’s priorities. Service may be starting up — refresh in a moment.</p>';
+      }
+    }
 
-        // Update KPIs
-        const kpisDiv = document.getElementById('attention-kpis');
-        kpisDiv.innerHTML = `
-          <div class="principles-grid">
-            <div class="principle-box">
-              <div class="principle-title">🚨 Critical Alerts</div>
-              <div class="principle-desc" style="font-size: 1.5rem; font-weight: 700; color: #dc2626;">${data.summary_metrics.critical_count}</div>
+    function renderKpis(m) {
+      const items = (m.critical_count || 0) + (m.high_count || 0);
+      document.getElementById('kpis').innerHTML = `
+        <div class="kpi">
+          <div class="kpi-label">Items needing action</div>
+          <div class="kpi-value ${items > 0 ? 'amber' : ''}">${items}</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Critical issues</div>
+          <div class="kpi-value red">${m.critical_count || 0}</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Money at risk</div>
+          <div class="kpi-value">₹${(m.total_financial_exposure_inr || 0).toLocaleString('en-IN')}</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Delayed purchase orders</div>
+          <div class="kpi-value">${m.delayed_pos_count || 0}</div>
+        </div>`;
+    }
+
+    function renderAlerts(items) {
+      const list = document.getElementById('alert-list');
+      if (!items.length) {
+        list.innerHTML = '<div class="alert"><strong>All clear.</strong> No attention items detected.</div>';
+        return;
+      }
+      list.innerHTML = '';
+      items.forEach((item, i) => {
+        const product = item.product ? (item.product.product_name || item.product.sku || '') : '';
+        const sku = item.product && item.product.sku ? ' (' + item.product.sku + ')' : '';
+        const store = item.store ? (item.store.store_name || '') : '';
+        const label = ALERT_PLAIN[item.alert_type] || (item.alert_type || '').replace(/_/g, ' ') || 'Issue';
+        const rule = item.priority || 'LOW';
+        const exposure = (item.business_impact && item.business_impact.exposure_inr) || 0;
+        const rec = (item.recommendation && item.recommendation.details) || (item.recommendation || '');
+
+        const card = document.createElement('div');
+        card.className = 'alert';
+        card.style.borderLeftColor = { CRITICAL: '#b91c1c', HIGH: '#ea580c', MEDIUM: '#d97706', LOW: '#94a3b8' }[rule] || '#94a3b8';
+
+        card.innerHTML = `
+          <div class="alert-top">
+            <div>
+              <div class="alert-title">${product}${sku} — ${store}</div>
+              <div class="alert-where">${label}</div>
             </div>
-            <div class="principle-box">
-              <div class="principle-title">💰 Total Capital at Risk</div>
-              <div class="principle-desc" style="font-size: 1.5rem; font-weight: 700;">₹${data.summary_metrics.total_financial_exposure_inr.toLocaleString()}</div>
-            </div>
-            <div class="principle-box">
-              <div class="principle-title">⚡ Urgent Actions Required</div>
-              <div class="principle-desc" style="font-size: 1.5rem; font-weight: 700; color: #ea580c;">${data.summary_metrics.critical_count + data.summary_metrics.high_count}</div>
-            </div>
-            <div class="principle-box">
-              <div class="principle-title">🚚 Delayed POs</div>
-              <div class="principle-desc" style="font-size: 1.5rem; font-weight: 700; color: #7c3aed;">${data.summary_metrics.delayed_pos_count}</div>
-            </div>
+            <span class="chip ${rule}">${rule}</span>
           </div>
-        `;
+          <div class="action">
+            <div class="action-label">Do this</div>
+            <div class="action-text">${rec}</div>
+          </div>
+          <button class="why-btn" onclick="toggleWhy(${i})">Why? Show the numbers</button>
+          <div class="why-body" id="why-${i}"></div>`;
 
-        // Update attention items list
-        const attentionDiv = document.getElementById('attention-list');
-        if (data.top_attention_items.length === 0) {
-          attentionDiv.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">No attention items detected.</p>';
-          return;
-        }
+        const why = card.querySelector('.why-body');
+        const lines = [];
+        if (item.reason) lines.push(`<p><strong>What’s happening:</strong> ${item.reason}</p>`);
+        if (exposure > 0) lines.push(`<p><strong>What it could cost:</strong> ₹${exposure.toLocaleString('en-IN')}</p>`);
+        if (item.urgency && item.urgency.description) lines.push(`<p><strong>How soon:</strong> ${item.urgency.description}</p>`);
+        if (item.business_impact && item.business_impact.description) lines.push(`<p><strong>Impact:</strong> ${item.business_impact.description}</p>`);
+        const assumptions = (item.assumptions || []).slice(0, 2);
+        if (assumptions.length) lines.push(`<p><strong>Assumptions:</strong> ${assumptions.join(' · ')}</p>`);
+        why.innerHTML = lines.length ? lines.join('') : '<p>No extra breakdown available.</p>';
 
-        attentionDiv.innerHTML = '<h3 style="margin-bottom: 16px; color: #0f172a;">Top Priority Operational Alerts</h3>';
-
-        attentionItems = data.top_attention_items;
-
-        data.top_attention_items.forEach((item, index) => {
-          const priorityColor = item.priority === 'CRITICAL' ? '#dc2626' :
-                               item.priority === 'HIGH' ? '#ea580c' :
-                               item.priority === 'MEDIUM' ? '#d97706' : '#64748b';
-
-          const alertTypeIcons = {
-            'LIKELY_STOCKOUT': '📦',
-            'SLOW_MOVING': '⏳',
-            'OVERSTOCK': '📊',
-            'SALES_SPIKE': '📈',
-            'SALES_DROP': '📉',
-            'SUPPLIER_DELAY': '🚚',
-            'DATA_QUALITY': '🔍'
-          };
-
-          const alertTypeLabels = {
-            'LIKELY_STOCKOUT': 'Likely Stockout',
-            'SLOW_MOVING': 'Slow Moving',
-            'OVERSTOCK': 'Overstock',
-            'SALES_SPIKE': 'Sales Spike',
-            'SALES_DROP': 'Sales Drop',
-            'SUPPLIER_DELAY': 'Supplier Delay',
-            'DATA_QUALITY': 'Data Quality'
-          };
-
-          const exposureInr = item.business_impact?.exposure_inr ?? 0;
-
-          attentionDiv.innerHTML += `
-            <div class="card" style="border-left: 4px solid ${priorityColor};">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-                <div>
-                  <h4 style="margin: 0 0 4px 0; color: #0f172a;">#${item.rank} ${alertTypeIcons[item.alert_type]} ${alertTypeLabels[item.alert_type]}</h4>
-                  <p style="margin: 0 0 8px 0; color: #334155; font-size: 0.9rem;">
-                    ${item.product?.product_name || 'Unknown Product'} (${item.product?.sku || ''}) at ${item.store?.store_name || 'Unknown Store'}
-                  </p>
-                  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <span style="background: ${priorityColor}20; color: ${priorityColor}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
-                      ${item.priority}
-                    </span>
-                    <span style="background: #f1f5f9; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">
-                      Score: ${item.priority_score.toFixed(1)}
-                    </span>
-                  </div>
-                </div>
-                <div style="text-align: right;">
-                  <button onclick="toggleAlertDetails(${index})" id="details-btn-${index}" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">
-                    View Details
-                  </button>
-                </div>
-              </div>
-              <div style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
-                <p style="margin: 0 0 8px 0; color: #0f172a; font-weight: 600;">Recommended Action:</p>
-                <p style="margin: 0; color: #059669; font-size: 0.9rem;">${item.recommendation.details}</p>
-              </div>
-              <div id="attention-details-${index}" style="display: none; border-top: 1px solid #e2e8f0; margin-top: 12px; padding-top: 12px;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
-                  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px;">
-                    <p style="margin: 0 0 4px 0; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Business Impact</p>
-                    <p style="margin: 0; font-size: 0.9rem; color: #0f172a; font-weight: 600;">₹${exposureInr.toLocaleString()}</p>
-                    <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #64748b;">${item.business_impact?.metric_name || ''}</p>
-                    <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #475569;">${item.business_impact?.description || ''}</p>
-                  </div>
-                  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px;">
-                    <p style="margin: 0 0 4px 0; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Urgency</p>
-                    <p style="margin: 0; font-size: 0.9rem; color: #0f172a; font-weight: 600;">Score: ${item.urgency?.score}</p>
-                    <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #64748b;">Driver: ${item.urgency?.primary_factor || ''}</p>
-                    <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #475569;">${item.urgency?.description || ''}</p>
-                  </div>
-                  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px;">
-                    <p style="margin: 0 0 4px 0; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Evidence Strength</p>
-                    <p style="margin: 0; font-size: 0.9rem; color: #0f172a; font-weight: 600;">Score: ${item.evidence_strength?.score}</p>
-                    <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #64748b;">Completeness: ${item.evidence_strength?.data_completeness} &middot; Sample: ${item.evidence_strength?.sample_size_days}d &middot; ${item.evidence_strength?.model_type || ''}</p>
-                    <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #475569;">${item.evidence_strength?.description || ''}</p>
-                  </div>
-                </div>
-                <p style="margin: 0 0 6px 0; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Evidence</p>
-                ${renderEvidence(item.evidence)}
-                <p style="margin: 0 0 6px 0; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Rationale</p>
-                <p style="margin: 0 0 12px 0; color: #0f172a; font-size: 0.85rem;">${item.recommendation.rationale}</p>
-                <p style="margin: 0 0 6px 0; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase;">Assumptions</p>
-                <ul style="margin: 0 0 12px 0; padding-left: 18px; color: #475569; font-size: 0.8rem;">
-                  ${item.assumptions.map(a => `<li>${a}</li>`).join('')}
-                </ul>
-                <p style="margin: 0; color: #334155; font-size: 0.85rem;">${item.reason}</p>
-              </div>
-            </div>
-          `;
-        });
-      } catch (err) {
-        console.error('Error fetching attention data:', err);
-        document.getElementById('attention-kpis').innerHTML = '<p style="color: #dc2626;">Error loading attention data</p>';
-        document.getElementById('attention-list').innerHTML = '<p style="color: #dc2626;">Failed to load attention items</p>';
-      }
+        list.appendChild(card);
+      });
     }
 
-    function toggleAlertDetails(index) {
-      const panel = document.getElementById(`attention-details-${index}`);
-      const btn = document.getElementById(`details-btn-${index}`);
-      if (!panel) return;
-      const isHidden = panel.style.display === 'none' || panel.style.display === '';
-      panel.style.display = isHidden ? 'block' : 'none';
-      if (btn) btn.textContent = isHidden ? 'Hide Details' : 'View Details';
+    function toggleWhy(i) {
+      const el = document.getElementById('why-' + i);
+      if (el) el.classList.toggle('open');
     }
 
-    function setQuery(text) {
-      document.getElementById('copilot-query-input').value = text;
-      submitCopilotQuery();
-    }
-
-    let currentEvidencePackage = null;
-
-    function isPolicyStyleQuestion(q) {
-      const t = (q || '').toLowerCase();
-      return /polic|procedur|rule|criteria|approval|approve|transfer|return|damaged|safety stock buffer|manual|guideline|sla|workflow/.test(t);
-    }
-
-    function toggleEvidenceInspector() {
-      const inspector = document.getElementById('evidence-inspector');
-      if (inspector.style.display === 'none' || inspector.style.display === '') {
-        inspector.style.display = 'block';
-        inspector.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      } else {
-        inspector.style.display = 'none';
-      }
-    }
-
-    async function submitCopilotQuery() {
-      const input = document.getElementById('copilot-query-input');
+    async function ask(prefill) {
+      const input = document.getElementById('q');
+      if (prefill) input.value = prefill;
       const question = input.value.trim();
       if (!question) return;
 
-      const btn = document.getElementById('copilot-send-btn');
-      const resBox = document.getElementById('copilot-response');
-      const resAnswer = document.getElementById('res-answer');
-      const resIntent = document.getElementById('res-badge-intent');
-      const resSuff = document.getElementById('res-badge-sufficient');
-      
-      const refusalBanner = document.getElementById('res-refusal-banner');
-      const refusalBadgeTag = document.getElementById('refusal-badge-tag');
-      const refusalTitle = document.getElementById('refusal-title');
-      const refusalExp = document.getElementById('refusal-explanation');
-
-      const factsWrap = document.getElementById('tier-fact-wrap');
-      const factsList = document.getElementById('res-facts-list');
-      const metricWrap = document.getElementById('tier-metric-wrap');
-      const metricsGrid = document.getElementById('res-metrics-grid');
-      const infWrap = document.getElementById('tier-inference-wrap');
-      const infList = document.getElementById('res-inferences-list');
-      const recWrap = document.getElementById('tier-rec-wrap');
-      const recContent = document.getElementById('res-rec-content');
-      const assumpWrap = document.getElementById('tier-assumption-wrap');
-      const assumpList = document.getElementById('res-assumptions-list');
-
-      const resEvidence = document.getElementById('res-evidence');
-      const resConfidence = document.getElementById('res-confidence');
-      const inspector = document.getElementById('evidence-inspector');
+      const btn = document.getElementById('ask-btn');
+      const result = document.getElementById('result');
+      const answerText = document.getElementById('answer-text');
+      const refusal = document.getElementById('refusal');
+      const numbersDetails = document.getElementById('numbers-details');
+      const numbersBody = document.getElementById('numbers-body');
+      const policyDetails = document.getElementById('policy-details');
+      const policyBody = document.getElementById('policy-body');
+      const confidence = document.getElementById('confidence');
 
       btn.disabled = true;
-      btn.textContent = 'Computing...';
-      resBox.style.display = 'block';
-      inspector.style.display = 'none';
-      refusalBanner.style.display = 'none';
-      resAnswer.textContent = 'Executing deterministic Python calculations and enforcing evidence grounding...';
-      resConfidence.textContent = '';
-      resEvidence.textContent = '';
+      btn.textContent = 'Thinking…';
+      result.style.display = 'block';
+      answerText.textContent = 'Working on it…';
+      refusal.hidden = true;
+      numbersDetails.open = false;
+      policyDetails.open = false;
+      policyBody.innerHTML = '';
+      confidence.textContent = '';
 
       try {
         const res = await fetch('/api/copilot/chat', {
@@ -1364,275 +527,87 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ question })
         });
-
-        if (!res.ok) throw new Error('Server returned HTTP ' + res.status);
+        if (!res.ok) throw new Error('Server returned ' + res.status);
         const data = await res.json();
-        currentEvidencePackage = data.evidence_package || data.evidence || {};
 
-        // Intent badge
-        resIntent.textContent = 'INTENT: ' + (data.intent || 'GENERAL_RETAIL_ANALYSIS');
+        answerText.textContent = data.answer || 'No answer generated.';
 
-        // Main Grounded Answer
-        resAnswer.textContent = data.answer || 'No answer generated.';
-
-        // Sufficiency Badge
-        if (data.data_sufficient && !data.refusal_reason) {
-          resSuff.textContent = '● Data Sufficient (Verified Ground Truth)';
-          resSuff.style.background = '#dcfce7';
-          resSuff.style.color = '#15803d';
-        } else {
-          resSuff.textContent = data.refusal_reason ? '● Refused / Qualified (' + data.refusal_reason + ')' : '● Data Insufficient';
-          resSuff.style.background = '#fee2e2';
-          resSuff.style.color = '#b91c1c';
-        }
-
-        // 1. Refusal & Qualification Banner
         if (data.refusal_reason) {
-          refusalBanner.style.display = 'block';
-          refusalBadgeTag.textContent = 'STRICT REFUSAL: ' + data.refusal_reason.replace(/_/g, ' ');
-          if (data.refusal_reason === 'UNESTABLISHED_CAUSALITY') {
-            refusalTitle.textContent = 'Refusal to Speculate: Correlation vs Causality';
-            refusalExp.textContent = 
-              'The system strictly refuses to claim why sales changed because the local database lacks external datasets. ' +
-              'Transaction and stock logs establish what happened, but cannot prove customer preferences, competitor maneuvers, or advertising efficacy.';
-          } else if (data.refusal_reason === 'INSUFFICIENT_DATE_RANGE') {
-            refusalTitle.textContent = 'Temporal Boundary Exceeded';
-            refusalExp.textContent = 'The query references dates outside our active recording bounds (June 1, 2024 to August 29, 2024). Speculation on unrecorded dates is prohibited.';
-          } else if (data.refusal_reason === 'UNSUPPORTED_PRODUCT') {
-            refusalTitle.textContent = 'Catalog Boundary: Product Not Indexed';
-            refusalExp.textContent = 'The requested product is not indexed in the verified catalog. Queries for non-existent items are strictly qualified.';
-          } else if (data.refusal_reason === 'NON_EXISTENT_STORE') {
-            refusalTitle.textContent = 'Network Boundary: Store Not Found';
-            refusalExp.textContent = 'The requested store is not part of the active physical store chain. Only verified stores are analyzed.';
-          } else {
-            refusalTitle.textContent = 'Analytical Refusal Rule Triggered';
-            refusalExp.textContent = 'Data is insufficient or required variables are missing from local records.';
-          }
+          refusal.hidden = false;
+          refusal.innerHTML = '<strong>' + refusalTitle(data.refusal_reason) + '</strong>'
+            + refusalExplanation(data.refusal_reason, question);
         } else {
-          refusalBanner.style.display = 'none';
+          refusal.hidden = true;
         }
 
-        // 2. OBSERVED FACTS (Blue)
-        const facts = data.observed_facts || [];
-        if (facts.length > 0) {
-          factsList.innerHTML = '';
-          facts.forEach(f => {
-            const li = document.createElement('li');
-            li.textContent = f;
-            factsList.appendChild(li);
-          });
-          factsWrap.style.display = 'block';
-        } else {
-          factsWrap.style.display = 'none';
-        }
-
-        // 3. CALCULATED METRICS (Purple)
-        const metrics = data.calculated_metrics || (currentEvidencePackage.metrics || []);
-        if (metrics.length > 0) {
-          metricsGrid.innerHTML = '';
-          metrics.forEach(m => {
-            const box = document.createElement('div');
-            box.className = 'metric-box';
-            
-            const nameDiv = document.createElement('div');
-            nameDiv.className = 'metric-name';
-            nameDiv.textContent = (m.metric || 'metric').replace(/_/g, ' ');
-
-            const valDiv = document.createElement('div');
-            valDiv.className = 'metric-value-row';
-            valDiv.innerHTML = `${m.value !== undefined ? m.value : '-'} <span class="metric-unit">${m.unit || ''}</span>`;
-
-            const formDiv = document.createElement('div');
-            formDiv.className = 'metric-formula';
-            formDiv.textContent = m.calculation || (m.source ? 'Source: ' + m.source : 'Deterministic formula');
-
-            box.appendChild(nameDiv);
-            box.appendChild(valDiv);
-            box.appendChild(formDiv);
-            metricsGrid.appendChild(box);
-          });
-          metricWrap.style.display = 'block';
-        } else {
-          metricWrap.style.display = 'none';
-        }
-
-        // 4. INFERENCES (Amber)
-        const inferences = data.inferences || [];
-        if (inferences.length > 0) {
-          infList.innerHTML = '';
-          inferences.forEach(inf => {
-            const li = document.createElement('li');
-            li.textContent = inf;
-            infList.appendChild(li);
-          });
-          infWrap.style.display = 'block';
-        } else {
-          infWrap.style.display = 'none';
-        }
-
-        // 5. RECOMMENDATIONS (Green)
-        const recs = data.recommendations && data.recommendations.length > 0 
-          ? data.recommendations 
-          : (data.recommendation ? [data.recommendation] : []);
-        if (recs.length > 0) {
-          recContent.innerHTML = recs.map(r => `<div><strong>•</strong> ${r}</div>`).join('');
-          recWrap.style.display = 'block';
-        } else {
-          recWrap.style.display = 'none';
-        }
-
-        // 6. ASSUMPTIONS (Slate)
+        numbersBody.innerHTML = '';
+        (data.observed_facts || []).forEach(f => {
+          numbersBody.innerHTML += `<div class="metric"><strong>What the data shows</strong><span>${f}</span></div>`;
+        });
+        (data.calculated_metrics || []).forEach(m => {
+          numbersBody.innerHTML += `<div class="metric"><strong>${(m.metric || 'metric').replace(/_/g, ' ')}</strong><span>${m.value !== undefined ? m.value : '-'} ${m.unit || ''}</span></div>`;
+        });
+        (data.inferences || []).forEach(f => {
+          numbersBody.innerHTML += `<div class="metric"><strong>Reading of the numbers</strong><span>${f}</span></div>`;
+        });
         const assumptions = data.assumptions || [];
-        if (assumptions.length > 0) {
-          assumpList.innerHTML = '';
-          assumptions.forEach(a => {
-            const li = document.createElement('li');
-            li.textContent = a;
-            assumpList.appendChild(li);
-          });
-          assumpWrap.style.display = 'block';
+        if (assumptions.length) {
+          numbersBody.innerHTML += '<ul>' + assumptions.map(a => `<li>${a}</li>`).join('') + '</ul>';
+        }
+        const hasNumbers = (data.observed_facts || []).length + (data.calculated_metrics || []).length
+          + (data.inferences || []).length + assumptions.length > 0;
+        numbersDetails.style.display = hasNumbers ? 'block' : 'none';
+
+        const pol = data.policy_evidence || [];
+        if (pol.length) {
+          policyBody.innerHTML = '<ul>' + pol.map(p =>
+            `<li><strong>${p.document_name || 'document'}#${p.chunk_id || '?'}` + (p.section ? ` — ${p.section}` : '') +
+            `</strong><br>${(p.text || '').slice(0, 300)}${(p.text || '').length > 300 ? '…' : ''}</li>`
+          ).join('') + '</ul>';
+          policyDetails.style.display = 'block';
         } else {
-          assumpWrap.style.display = 'none';
+          policyDetails.style.display = 'none';
         }
 
-        // 7. POLICY EVIDENCE (retrieved knowledge-base documents)
-        const policyEvidence = data.policy_evidence || [];
-        const policySection = document.getElementById('policy-evidence-section');
-        const policyList = document.getElementById('policy-evidence-list');
-        if (policyEvidence.length > 0) {
-          policyList.innerHTML = '';
-          policyEvidence.forEach(p => {
-            const item = document.createElement('div');
-            item.style.cssText = 'border: 1px solid #bae6fd; border-radius: 8px; padding: 10px 12px; background: #ffffff;';
-            const meta = document.createElement('div');
-            meta.style.cssText = 'font-size: 0.78rem; font-weight: 700; color: #075985; margin-bottom: 4px;';
-            const scoreTxt = (p.score !== undefined && p.score !== null) ? ' · score ' + p.score : '';
-            meta.textContent = (p.document_name || 'document') + '#' + (p.chunk_id || '?') + (p.section ? ' (' + p.section + ')' : '') + scoreTxt;
-            const body = document.createElement('div');
-            body.style.cssText = 'font-size: 0.82rem; color: #334155; line-height: 1.5;';
-            const excerpt = (p.text || '').length > 300 ? (p.text || '').slice(0, 300) + '…' : (p.text || '');
-            body.textContent = excerpt;
-            item.appendChild(meta);
-            item.appendChild(body);
-            policyList.appendChild(item);
-          });
-          policySection.style.display = 'block';
+        if (data.document_retrieval_available === false && /polic|procedur|rule|approval|transfer|damaged|guideline|sla/i.test(question)) {
+          confidence.textContent = 'Note: policy documents are not available right now; this answer uses analytics only.';
         } else {
-          policySection.style.display = 'none';
+          confidence.textContent = data.confidence_note || '';
         }
-
-        // 8. Muted notice when a policy-style question was asked but retrieval is unavailable
-        const retrievalNote = document.getElementById('retrieval-unavailable-note');
-        if (data.document_retrieval_available === false && isPolicyStyleQuestion(question)) {
-          retrievalNote.style.display = 'block';
-        } else {
-          retrievalNote.style.display = 'none';
-        }
-
-        // Populate Evidence Inspector Details
-        populateInspector(data);
-
-        // Raw Evidence JSON & Confidence Note
-        resEvidence.textContent = JSON.stringify(data.evidence || {}, null, 2);
-        resConfidence.textContent = data.confidence_note || 'Ground truth computed deterministically via Python analytics over local SQLite database.';
-
-      } catch (err) {
-        resAnswer.textContent = 'Error: ' + err.message;
-        resSuff.textContent = 'Failed';
-        resSuff.style.background = '#fee2e2';
-        resSuff.style.color = '#b91c1c';
+      } catch (e) {
+        answerText.textContent = 'Something went wrong: ' + e.message;
+        refusal.hidden = false;
+        refusal.innerHTML = '<strong>Could not complete the request</strong>The assistant hit an unexpected error. Please try again.';
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Ask Copilot';
+        btn.textContent = 'Ask';
       }
     }
 
-    function populateInspector(data) {
-      const pkg = data.evidence_package || data.evidence || {};
-      
-      // Meta row
-      const sources = pkg.source_tables ? pkg.source_tables.join(', ') : (pkg.source || 'inventory.csv, sales.csv');
-      document.getElementById('insp-sources').textContent = sources;
+    function refusalTitle(reason) {
+      return {
+        UNESTABLISHED_CAUSALITY: 'I can’t be sure why this happened',
+        INSUFFICIENT_DATE_RANGE: 'Those dates are outside our records',
+        UNSUPPORTED_PRODUCT: 'That product is not in our catalog',
+        NON_EXISTENT_STORE: 'That store is not in the network',
+        INSUFFICIENT_DATA: 'I don’t have enough data to answer'
+      }[reason] || 'I can’t answer that from the data';
+    }
 
-      const entity = [
-        pkg.sku || pkg.product_name || data.product || 'Network SKUs',
-        pkg.store_name || pkg.city || data.store || 'All Stores'
-      ].filter(Boolean).join(' • ');
-      document.getElementById('insp-entity').textContent = entity;
-
-      const period = pkg.date_range 
-        ? (pkg.date_range.start_date ? `${pkg.date_range.start_date} to ${pkg.date_range.end_date}` : JSON.stringify(pkg.date_range))
-        : (data.time_period || '2024-06-01 to 2024-08-29');
-      document.getElementById('insp-period').textContent = period;
-
-      // Raw values table
-      const rawTbody = document.getElementById('insp-raw-tbody');
-      rawTbody.innerHTML = '';
-      const rawValues = pkg.raw_values || {};
-      if (Object.keys(rawValues).length === 0) {
-        rawTbody.innerHTML = '<tr><td colspan="3" style="color: #94a3b8; font-style: italic;">No raw ledger variables recorded for this intent.</td></tr>';
-      } else {
-        for (const [key, val] of Object.entries(rawValues)) {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td><code>${key}</code></td>
-            <td><strong>${typeof val === 'object' ? JSON.stringify(val) : val}</strong></td>
-            <td><code>SQLite ledger / CSV</code></td>
-          `;
-          rawTbody.appendChild(tr);
-        }
-      }
-
-      // Calculations table
-      const calcTbody = document.getElementById('insp-calc-tbody');
-      calcTbody.innerHTML = '';
-      const calcValues = pkg.calculated_values || {};
-      const formulas = pkg.formulas || {};
-      if (Object.keys(calcValues).length === 0 && (!pkg.metrics || pkg.metrics.length === 0)) {
-        calcTbody.innerHTML = '<tr><td colspan="3" style="color: #94a3b8; font-style: italic;">No calculated metrics available.</td></tr>';
-      } else if (pkg.metrics && pkg.metrics.length > 0) {
-        pkg.metrics.forEach(m => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td><code>${m.metric}</code></td>
-            <td><strong>${m.value} ${m.unit || ''}</strong></td>
-            <td><code>${m.calculation || formulas[m.metric] || 'Python analytic'}</code></td>
-          `;
-          calcTbody.appendChild(tr);
-        });
-      } else {
-        for (const [key, val] of Object.entries(calcValues)) {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td><code>${key}</code></td>
-            <td><strong>${val}</strong></td>
-            <td><code>${formulas[key] || 'Deterministic formula'}</code></td>
-          `;
-          calcTbody.appendChild(tr);
-        }
-      }
-
-      // Limitations & Warnings
-      const limitationsBox = document.getElementById('insp-limitations');
-      const warnings = pkg.data_quality_warnings || [];
-      const causalLimits = pkg.causal_limitations || data.limitations || [];
-      const allLimits = [...warnings, ...causalLimits];
-
-      if (allLimits.length === 0) {
-        limitationsBox.innerHTML = '<strong>Data Quality:</strong> Zero data anomalies or unmeasured variables detected.';
-      } else {
-        limitationsBox.innerHTML = `
-          <strong>Evidence Limitations &amp; Unmeasured Factors:</strong>
-          <ul style="margin: 6px 0 0 16px;">
-            ${allLimits.map(l => `<li>${l}</li>`).join('')}
-          </ul>
-        `;
-      }
+    function refusalExplanation(reason, question) {
+      const base = 'I can show what the records say, but I won’t guess beyond them.';
+      const extra = {
+        UNESTABLISHED_CAUSALITY: 'The records show what happened, but the reason needs external data like competitor pricing, customer feedback, or marketing activity that we don’t have.',
+        INSUFFICIENT_DATE_RANGE: 'Our records cover 2024-06-01 to 2024-08-29 only.',
+        UNSUPPORTED_PRODUCT: 'This SKU or product isn’t in the stock catalog.',
+        NON_EXISTENT_STORE: 'Only the stores in our network are analyzed.'
+      }[reason] || '';
+      return base + (extra ? ' ' + extra : '');
     }
 
     checkHealth();
     checkCopilotStatus();
-    fetchAttentionToday();
+    fetchToday();
   </script>
 </body>
 </html>
