@@ -1,0 +1,6 @@
+{
+  "name": "Retail - Sales and Inventory Copilot",
+  "description": "Sales and Inventory Copilot for retail store managers featuring deterministic analytics, stockout detection, demand forecasting, and Gemini reasoning.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

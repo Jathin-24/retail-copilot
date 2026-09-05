@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retail - Sales and Inventory Copilot</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --success: #16a34a;
+      --success-light: #f0fdf4;
+      --badge-bg: #f1f5f9;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-family);
+      line-height: 1.6;
+      padding: 32px 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 36px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--badge-bg);
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 720px;
+    }
+
+    .status-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 4px var(--success-light);
+    }
+
+    .status-text {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .api-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary);
+      text-decoration: none;
+      background: var(--primary-light);
+      padding: 6px 14px;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+
+    .api-link:hover {
+      background: #dbeafe;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    .principles-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .principles-grid {
+        grid-template-columns: 1fr;
+      }
+      .status-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+    }
+
+    .principle-box {
+      background: var(--badge-bg);
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .principle-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .principle-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .modules-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .module-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+      background: #fafafa;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .module-tag {
+      font-size: 0.75rem;
+      font-family: monospace;
+      font-weight: 700;
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .module-info {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .module-name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">TRACK_ID: PS03 • Fast-Track Architecture</div>
+      <h1>Retail: Sales &amp; Inventory Copilot</h1>
+      <p class="subtitle">
+        Intelligent decision support for multi-store retail managers. Built on deterministic Python business logic and Gemini-powered reasoning.
+      </p>
+    </header>
+
+    <div class="status-card">
+      <div class="status-indicator">
+        <div class="dot" id="health-dot"></div>
+        <div>
+          <div class="status-text" id="health-label">Checking service health...</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);" id="health-details">Connecting to /api/health</div>
+        </div>
+      </div>
+      <a href="/api/health" target="_blank" class="api-link">View GET /api/health &rarr;</a>
+    </div>
+
+    <div class="card">
+      <h2>Architectural Foundations</h2>
+      <p style="font-size: 0.95rem; color: var(--text-muted);">
+        Strict separation of concerns ensures absolute numerical accuracy and zero hallucinations:
+      </p>
+      <div class="principles-grid">
+        <div class="principle-box">
+          <div class="principle-title">1. Deterministic Python Core</div>
+          <div class="principle-desc">
+            All aggregations, run-rates, margins, safety stock calculations, and anomaly detections are executed deterministically in Python using SQLite and Pandas.
+          </div>
+        </div>
+        <div class="principle-box">
+          <div class="principle-title">2. Grounded Gemini Reasoning</div>
+          <div class="principle-desc">
+            Gemini performs intent classification and explains calculated outputs. Gemini never calculates or invents numerical figures.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Module Boundaries</h2>
+      <p style="font-size: 0.95rem; color: var(--text-muted);">
+        The codebase is partitioned into isolated, modular domains:
+      </p>
+      <div class="modules-list">
+        <div class="module-item">
+          <div>
+            <span class="module-tag">database/</span>
+            <div class="module-name">Stores &amp; Inventory DB</div>
+            <div class="module-info">Local SQLite persistence with stores, products, inventory, and sales.</div>
+          </div>
+        </div>
+        <div class="module-item">
+          <div>
+            <span class="module-tag">analytics/</span>
+            <div class="module-name">Deterministic KPIs</div>
+            <div class="module-info">Sales velocity, product performance, and gross profit metrics.</div>
+          </div>
+        </div>
+        <div class="module-item">
+          <div>
+            <span class="module-tag">forecasting/</span>
+            <div class="module-name">Demand Run-Rate</div>
+            <div class="module-info">Days of supply projection and stockout risk runway modeling.</div>
+          </div>
+        </div>
+        <div class="module-item">
+          <div>
+            <span class="module-tag">anomaly/</span>
+            <div class="module-name">Anomaly Detection</div>
+            <div class="module-info">Statistical detection of sales spikes, sudden drops, and overstocks.</div>
+          </div>
+        </div>
+        <div class="module-item">
+          <div>
+            <span class="module-tag">recommendations/</span>
+            <div class="module-name">Action Engine</div>
+            <div class="module-info">Automated reordering, inter-store transfers, and priority actions.</div>
+          </div>
+        </div>
+        <div class="module-item">
+          <div>
+            <span class="module-tag">copilot/</span>
+            <div class="module-name">Gemini Reasoning</div>
+            <div class="module-info">Natural-language intent classification and grounded explanations.</div>
+          </div>
+        </div>
+        <div class="module-item">
+          <div>
+            <span class="module-tag">retrieval/</span>
+            <div class="module-name">Local Search</div>
+            <div class="module-info">Fast catalog and supplier metadata querying without external APIs.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Retail - Sales and Inventory Copilot &bull; Single Command Startup: <code>python app.py</code>
+    </footer>
+  </div>
+
+  <script>
+    async function checkHealth() {
+      try {
+        const res = await fetch('/api/health');
+        if (!res.ok) throw new Error('Health check returned status ' + res.status);
+        const data = await res.json();
+        document.getElementById('health-label').textContent = 'Copilot Service Active (' + data.status + ')';
+        document.getElementById('health-details').textContent = data.project + ' • Track: ' + data.track_id;
+        document.getElementById('health-dot').style.background = '#16a34a';
+      } catch (err) {
+        document.getElementById('health-label').textContent = 'Service Standby';
+        document.getElementById('health-details').textContent = err.message;
+        document.getElementById('health-dot').style.background = '#eab308';
+      }
+    }
+    checkHealth();
+  </script>
+</body>
+</html>
